@@ -125,7 +125,7 @@ fn write_tile<F: Float, W: BlockWriter<F>>(
         let read_pos = read_offset + i * sm_step;
         let write_row = row_offset + unit_write_row + i * lane_row_step;
 
-        for n in range(0u32, num_accumulators_r, Comptime::new(true)) {
+        for n in range(0u32, Comptime::get(num_accumulators), Comptime::new(true)) {
             W::write_output(
                 out,
                 accumulator_sm,

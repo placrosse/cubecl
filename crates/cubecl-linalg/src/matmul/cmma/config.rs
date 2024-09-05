@@ -39,7 +39,7 @@ impl CmmaBlockConfig {
             block_size_k: self.b_k.into(),
             block_size_n: self.b_mn.into(),
             tile_size: CMMA_TILE_SIZE.into(),
-            unroll: true,
+            unroll: false,
             check_m_bounds: m % self.b_mn != 0,
             check_k_bounds: k % self.b_k != 0,
             check_n_bounds: n % self.b_mn != 0,
