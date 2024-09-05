@@ -125,15 +125,15 @@ fn matmul_cmma_ref_no_check<R: Runtime, F: Float>(
     let rhs_vectorization = vectorization(n);
     let out_vectorization = vectorization(n);
 
-    //unsafe {
-    //    cmma_kernel::launch_unchecked::<F, F16, R>(
-    //        client,
-    //        block_config.cube_count::<R>(out.shape),
-    //        block_config.cube_dim(),
-    //        TensorArg::from_raw_parts(lhs.handle, lhs.strides, lhs.shape, lhs_vectorization),
-    //        TensorArg::from_raw_parts(rhs.handle, rhs.strides, rhs.shape, rhs_vectorization),
-    //        TensorArg::from_raw_parts(out.handle, out.strides, out.shape, out_vectorization),
-    //        block_config.comptime_info(m, k, n),
-    //    );
-    //}
+    unsafe {
+        cmma_kernel::launch_unchecked::<F, F16, R>(
+            client,
+            block_config.cube_count::<R>(out.shape),
+            block_config.cube_dim(),
+            TensorArg::from_raw_parts(lhs.handle, lhs.strides, lhs.shape, lhs_vectorization),
+            TensorArg::from_raw_parts(rhs.handle, rhs.strides, rhs.shape, rhs_vectorization),
+            TensorArg::from_raw_parts(out.handle, out.strides, out.shape, out_vectorization),
+            block_config.comptime_info(m, k, n),
+        );
+    }
 }
