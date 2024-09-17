@@ -26,7 +26,7 @@ impl SmemStore for AddStore {
 
         #[unroll]
         for i in 0..8 {
-            array[i] = smem_slice[lane_offset + i] + F::new(5.);
+            array[i] = smem_slice[lane_offset + i];
         }
 
         cmma::store::<F>(smem_slice, accumulator, 16, cmma::MatrixLayout::RowMajor);
