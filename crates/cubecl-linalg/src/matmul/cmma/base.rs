@@ -1,11 +1,12 @@
 use cubecl_core::cube;
 use cubecl_core::{self as cubecl, prelude::*};
 
-use super::block_loop::block_loop;
 use super::config::ComptimeCmmaInfo;
 use super::cube_dispatch::base::{
     ColMajorCubeDispatch, CubeDispatch, RowMajorCubeDispatch, SwizzleCubeDispatch,
 };
+
+use crate::matmul::cmma::block_loop::{BlockLoop, DoubleBufferLoop, SingleBufferLoop};
 
 #[cube(launch_unchecked)]
 #[allow(unused_mut)]
@@ -22,15 +23,28 @@ pub fn cmma_kernel<F: Float, FC: Float>(
 
     let shared_memories = make_shared_memories::<FC>(comptime_info);
     let cmma_matrices = make_cmma_matrices::<F, FC>(comptime_info);
-    block_loop::<F, FC>(
-        lhs,
-        rhs,
-        out,
-        shared_memories,
-        cmma_matrices,
-        runtime_info,
-        comptime_info,
-    );
+
+    if comptime_info.double_buffering {
+        DoubleBufferLoop::block_loop::<F, FC>(
+            lhs,
+            rhs,
+            out,
+            shared_memories,
+            cmma_matrices,
+            runtime_info,
+            comptime_info,
+        );
+    } else {
+        SingleBufferLoop::block_loop::<F, FC>(
+            lhs,
+            rhs,
+            out,
+            shared_memories,
+            cmma_matrices,
+            runtime_info,
+            comptime_info,
+        );
+    }
 }
 
 #[derive(CubeType, Copy, Clone)]

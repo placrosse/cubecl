@@ -114,7 +114,7 @@ pub fn cmma_write_output_warp_test<R: Runtime>(device: &R::Device) {
         CmmaConfig {
             b_mn: 32,
             b_k: 16,
-            write_out_strategy: WriteOutStrategy::LargeSmem,
+            write_out: WriteOutStrategy::LargeSmem,
             cube_dispatch: CubeDispatchStrategy::ColMajor,
             ..Default::default()
         },
@@ -178,7 +178,7 @@ pub fn cmma_write_output_warp_horizontal_out_of_bounds_test<R: Runtime>(device: 
         CmmaConfig {
             b_mn: 32,
             b_k: 16,
-            write_out_strategy: WriteOutStrategy::LargeSmem,
+            write_out: WriteOutStrategy::LargeSmem,
             cube_dispatch: CubeDispatchStrategy::ColMajor,
             ..Default::default()
         },
@@ -236,7 +236,7 @@ pub fn cmma_write_output_warp_vertical_out_of_bounds_test<R: Runtime>(device: &R
         CmmaConfig {
             b_mn: 32,
             b_k: 16,
-            write_out_strategy: WriteOutStrategy::LargeSmem,
+            write_out: WriteOutStrategy::LargeSmem,
             cube_dispatch: CubeDispatchStrategy::ColMajor,
             ..Default::default()
         },
@@ -294,7 +294,7 @@ pub fn cmma_write_output_warp_whole_out_of_bounds_test<R: Runtime>(device: &R::D
         CmmaConfig {
             b_mn: 32,
             b_k: 16,
-            write_out_strategy: WriteOutStrategy::LargeSmem,
+            write_out: WriteOutStrategy::LargeSmem,
             cube_dispatch: CubeDispatchStrategy::ColMajor,
             ..Default::default()
         },
@@ -348,7 +348,7 @@ pub fn cmma_write_output_second_warp_test<R: Runtime>(device: &R::Device) {
         CmmaConfig {
             b_mn: 32,
             b_k: 16,
-            write_out_strategy: WriteOutStrategy::LargeSmem,
+            write_out: WriteOutStrategy::LargeSmem,
             cube_dispatch: CubeDispatchStrategy::ColMajor,
             ..Default::default()
         },
@@ -453,7 +453,7 @@ pub fn cmma_write_output_third_fourth_warps_test<R: Runtime>(device: &R::Device)
         CmmaConfig {
             b_mn: 32,
             b_k: 16,
-            write_out_strategy: WriteOutStrategy::LargeSmem,
+            write_out: WriteOutStrategy::LargeSmem,
             cube_dispatch: CubeDispatchStrategy::ColMajor,
             ..Default::default()
         },
