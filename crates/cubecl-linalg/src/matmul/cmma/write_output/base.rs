@@ -3,19 +3,22 @@ use cubecl_core::prelude::*;
 
 use crate::matmul::cmma::base::RuntimeCmmaInfo;
 
-use super::super::{
-    block_io::{
-        base::BlockWriter, horizontal_block_check::HorizontalCheckBlockIO,
-        unchecked_block::UncheckedBlockIO, vertical_block_check::VerticalCheckBlockIO,
-        whole_block_check::WholeCheckBlockIO,
+use super::{
+    super::{
+        block_io::{
+            base::BlockWriter, horizontal_block_check::HorizontalCheckBlockIO,
+            unchecked_block::UncheckedBlockIO, vertical_block_check::VerticalCheckBlockIO,
+            whole_block_check::WholeCheckBlockIO,
+        },
+        config::ComptimeCmmaInfo,
     },
-    config::ComptimeCmmaInfo,
+    smem_store::SmemStore,
 };
 
 #[cube]
 /// Writes accumulators to global memory
 pub(crate) trait OutputWriter: Send + Sync + 'static {
-    fn write_to_output<F: Float>(
+    fn write_to_output<F: Float, S: SmemStore>(
         out: &mut Tensor<F>,
         accumulators: Sequence<cmma::Matrix<F>>,
         runtime_info: RuntimeCmmaInfo,
@@ -27,7 +30,7 @@ pub(crate) trait OutputWriter: Send + Sync + 'static {
 pub(crate) fn shared_memory_to_output<F: Float>(
     out: &mut Tensor<F>,
     smem_position: u32,
-    accumulator_sm: SharedMemory<F>,
+    accumulator_smem: SharedMemory<F>,
     n_iter: u32,
     runtime_info: RuntimeCmmaInfo,
     #[comptime] comptime_info: ComptimeCmmaInfo,
@@ -40,7 +43,7 @@ pub(crate) fn shared_memory_to_output<F: Float>(
             write_tile::<F, WholeCheckBlockIO>(
                 out,
                 smem_position,
-                accumulator_sm,
+                accumulator_smem,
                 n_iter,
                 runtime_info,
                 comptime_info,
@@ -49,7 +52,7 @@ pub(crate) fn shared_memory_to_output<F: Float>(
             write_tile::<F, VerticalCheckBlockIO>(
                 out,
                 smem_position,
-                accumulator_sm,
+                accumulator_smem,
                 n_iter,
                 runtime_info,
                 comptime_info,
@@ -59,7 +62,7 @@ pub(crate) fn shared_memory_to_output<F: Float>(
         write_tile::<F, HorizontalCheckBlockIO>(
             out,
             smem_position,
-            accumulator_sm,
+            accumulator_smem,
             n_iter,
             runtime_info,
             comptime_info,
@@ -68,7 +71,7 @@ pub(crate) fn shared_memory_to_output<F: Float>(
         write_tile::<F, UncheckedBlockIO>(
             out,
             smem_position,
-            accumulator_sm,
+            accumulator_smem,
             n_iter,
             runtime_info,
             comptime_info,
@@ -80,7 +83,7 @@ pub(crate) fn shared_memory_to_output<F: Float>(
 fn write_tile<F: Float, W: BlockWriter<F>>(
     out: &mut Tensor<F>,
     smem_position: u32,
-    accumulator_sm: SharedMemory<F>,
+    accumulator_smem: SharedMemory<F>,
     n_iter: u32,
     runtime_info: RuntimeCmmaInfo,
     #[comptime] comptime_info: ComptimeCmmaInfo,
@@ -121,7 +124,7 @@ fn write_tile<F: Float, W: BlockWriter<F>>(
 
         W::write_output(
             out,
-            accumulator_sm,
+            accumulator_smem,
             offsets.batch_out,
             read_pos,
             write_row,

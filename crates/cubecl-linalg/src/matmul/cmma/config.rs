@@ -6,7 +6,7 @@ use cubecl_core::prelude::*;
 pub(crate) const CMMA_COOP_DIM: usize = 32;
 pub(crate) const CMMA_TILE_SIZE: usize = 16;
 
-#[derive(Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 /// Defines how data travels from accumulators to global output
 pub enum WriteOutStrategy {
     /// Accumulators for one warp are put concurrently in a shared memory large enough to contain them all
@@ -47,11 +47,19 @@ impl From<CubeDispatchStrategy> for u32 {
 }
 
 /// Defines how many shared memories are loaded/computed in parallel
-#[derive(Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub enum BufferingStrategy {
     /// No parallelism
     Single,
     /// Computation on buffer 1 can occur during loading of buffer 2, and vice versa
+    ///
+    /// Eventual sub-configs:
+    /// - Warps that work together (team) either consecutive (better coalescing?)
+    /// or interleaved (better load balancing?)
+    /// - The two teams either share the shared memory with an offset, or have their own
+    /// (simpler, but maybe heavier)
+    /// - Accumulation is performed in accumulators then two are summed only at the end
+    /// when writing to SMEM, or the SMEM is written to all along (probably worse)
     Double,
 }
 
@@ -85,7 +93,7 @@ impl Default for CmmaConfig {
             128,
             16,
             false,
-            WriteOutStrategy::ReuseSmem,
+            WriteOutStrategy::LargeSmem,
             CubeDispatchStrategy::ColMajor,
             BufferingStrategy::Double,
         )
@@ -104,6 +112,11 @@ impl CmmaConfig {
         assert!(b_mn % CMMA_TILE_SIZE == 0);
         assert!(b_k % CMMA_TILE_SIZE == 0);
         assert!(b_mn % b_k == 0);
+
+        assert!(
+            !(buffering == BufferingStrategy::Double && write_out == WriteOutStrategy::ReuseSmem)
+        );
+
         CmmaConfig {
             b_mn,
             b_k,
@@ -116,7 +129,6 @@ impl CmmaConfig {
 
     pub(crate) fn comptime_info(&self, m: usize, k: usize, n: usize) -> ComptimeCmmaInfo {
         let num_coops = self.b_mn * self.b_k / (CMMA_TILE_SIZE * CMMA_TILE_SIZE);
-
         ComptimeCmmaInfo {
             block_size_m: self.b_mn as u32,
             block_size_k: self.b_k as u32,

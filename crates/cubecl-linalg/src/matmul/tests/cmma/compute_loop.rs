@@ -42,6 +42,7 @@ fn compute_loop_test<F: Float, FC: Float>(
         Ids {
             coop: UNIT_POS_Y,
             lane: UNIT_POS_X,
+            team: UNIT_POS_Y / 2,
         },
         comptime_info,
     );

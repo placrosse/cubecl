@@ -39,6 +39,7 @@ pub(crate) struct Dimensions {
 pub(crate) struct Ids {
     pub coop: u32,
     pub lane: u32,
+    pub team: u32,
 }
 
 #[derive(CubeType, Copy, Clone)]
@@ -132,7 +133,9 @@ pub(crate) fn get_row_col(#[comptime] comptime_info: ComptimeCmmaInfo) -> (u32, 
 }
 
 #[cube]
-pub(crate) fn make_shared_memories<FC: Float>(#[comptime] config: ComptimeCmmaInfo) -> SharedMemories<FC> {
+pub(crate) fn make_shared_memories<FC: Float>(
+    #[comptime] config: ComptimeCmmaInfo,
+) -> SharedMemories<FC> {
     let block_size_m = config.block_size_m;
     let block_size_k = config.block_size_k;
     let block_size_n = config.block_size_n;
@@ -193,5 +196,6 @@ fn get_ids() -> Ids {
     Ids {
         coop: UNIT_POS_Y,
         lane: UNIT_POS_X,
+        team: UNIT_POS_Y % 2,
     }
 }

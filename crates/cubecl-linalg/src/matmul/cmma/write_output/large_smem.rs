@@ -6,13 +6,14 @@ use crate::matmul::cmma::base::RuntimeCmmaInfo;
 use super::{
     super::config::ComptimeCmmaInfo,
     base::{shared_memory_to_output, OutputWriter},
+    smem_store::SmemStore,
 };
 
 pub(crate) struct LargeSmemWriter;
 
 #[cube]
 impl OutputWriter for LargeSmemWriter {
-    fn write_to_output<F: Float>(
+    fn write_to_output<F: Float, S: SmemStore>(
         out: &mut Tensor<F>,
         accumulators: Sequence<cmma::Matrix<F>>,
         runtime_info: RuntimeCmmaInfo,
@@ -38,12 +39,7 @@ impl OutputWriter for LargeSmemWriter {
 
             let slice = acc_sm.slice_mut(slice_start, slice_end);
 
-            cmma::store::<F>(
-                slice,
-                accumulators.index(n),
-                16,
-                cmma::MatrixLayout::RowMajor,
-            );
+            S::store(slice, accumulators.index(n));
         }
 
         #[unroll]

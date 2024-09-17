@@ -45,6 +45,7 @@ fn load_lhs_test<F: Float>(
     let ids = Ids {
         coop: UNIT_POS_Y,
         lane: UNIT_POS_X,
+        team: UNIT_POS_Y / 2,
     };
     let runtime_info = RuntimeCmmaInfo { offsets, dims, ids };
 
@@ -89,6 +90,7 @@ fn load_rhs_test<F: Float>(
     let ids = Ids {
         coop: UNIT_POS_Y,
         lane: UNIT_POS_X,
+        team: UNIT_POS_Y / 2,
     };
     let runtime_info = RuntimeCmmaInfo { offsets, dims, ids };
 
