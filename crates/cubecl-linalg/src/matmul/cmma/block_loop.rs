@@ -151,6 +151,7 @@ impl BlockLoop for DoubleBufferLoop {
             }
         }
 
+        // 0.003
         if ids.team == 0 {
             write_out::<F, OverrideStore>(
                 out,
@@ -162,6 +163,7 @@ impl BlockLoop for DoubleBufferLoop {
 
         sync_units();
 
+        // 0.005
         if ids.team == 1 {
             write_out::<F, AddStore>(
                 out,

@@ -194,7 +194,7 @@ pub(crate) fn make_cmma_matrices<F: Float, FC: Float>(
 #[cube]
 fn get_ids() -> Ids {
     Ids {
-        coop: UNIT_POS_Y,
+        coop: UNIT_POS_Y / 2,
         lane: UNIT_POS_X,
         team: UNIT_POS_Y % 2,
     }
