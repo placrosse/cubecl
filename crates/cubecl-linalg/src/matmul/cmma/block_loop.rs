@@ -101,10 +101,10 @@ impl BlockLoop for DoubleBufferLoop {
         let num_loops = (num_blocks + 1) / 2;
 
         let ids = runtime_info.ids;
-        if ids.team == 0 {
-            for iteration in 0..num_loops {
-                let k_offset_0 = (iteration * 2) * block_size_k;
+        for iteration in 0..num_loops {
+            let k_offset_0 = (iteration * 2) * block_size_k;
 
+            if ids.team == 0 {
                 load_to_shared_memories::<F, FC>(
                     lhs,
                     rhs,
@@ -113,32 +113,21 @@ impl BlockLoop for DoubleBufferLoop {
                     runtime_info,
                     comptime_info,
                 );
+            }
 
-                sync_units();
+            sync_units();
 
+            if ids.team == 0 {
                 compute_loop::<F, FC>(
                     shared_memories_0,
                     &mut cmma_matrices_0,
                     runtime_info.ids,
                     comptime_info,
                 );
-
-                sync_units();
             }
 
-            write_out::<F, OverrideStore>(
-                out,
-                cmma_matrices_0.accumulators,
-                runtime_info,
-                comptime_info,
-            );
-
-            sync_units();
-        } else {
-            for iteration in 0..num_loops {
+            if ids.team == 1 {
                 let k_offset = (iteration * 2 + 1) * block_size_k;
-
-                sync_units();
 
                 load_to_shared_memories::<F, FC>(
                     lhs,
@@ -148,9 +137,11 @@ impl BlockLoop for DoubleBufferLoop {
                     runtime_info,
                     comptime_info,
                 );
+            }
 
-                sync_units();
+            sync_units();
 
+            if ids.team == 1 {
                 compute_loop::<F, FC>(
                     shared_memories_1,
                     &mut cmma_matrices_1,
@@ -158,9 +149,20 @@ impl BlockLoop for DoubleBufferLoop {
                     comptime_info,
                 );
             }
+        }
 
-            sync_units();
+        if ids.team == 0 {
+            write_out::<F, OverrideStore>(
+                out,
+                cmma_matrices_0.accumulators,
+                runtime_info,
+                comptime_info,
+            );
+        }
 
+        sync_units();
+
+        if ids.team == 1 {
             write_out::<F, AddStore>(
                 out,
                 cmma_matrices_1.accumulators,

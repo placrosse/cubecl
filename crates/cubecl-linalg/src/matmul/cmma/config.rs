@@ -90,11 +90,11 @@ pub struct CmmaConfig {
 impl Default for CmmaConfig {
     fn default() -> Self {
         Self::new(
-            128,
+            32,
             16,
             false,
             WriteOutStrategy::LargeSmem,
-            CubeDispatchStrategy::ColMajor,
+            CubeDispatchStrategy::RowMajor,
             BufferingStrategy::Double,
         )
     }
@@ -167,9 +167,15 @@ impl CmmaConfig {
     }
 
     pub(crate) fn cube_dim(&self) -> CubeDim {
+        let y = ((self.b_mn * self.b_k) / (CMMA_TILE_SIZE * CMMA_TILE_SIZE)) as u32;
+        let y = match self.buffering {
+            BufferingStrategy::Single => y,
+            BufferingStrategy::Double => y * 2,
+        };
+
         CubeDim {
             x: CMMA_COOP_DIM as u32,
-            y: ((self.b_mn * self.b_k) / (CMMA_TILE_SIZE * CMMA_TILE_SIZE)) as u32,
+            y,
             z: 1,
         }
     }

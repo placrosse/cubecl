@@ -24,14 +24,14 @@ impl SmemStore for AddStore {
         let lane_id = ids.lane; // 0..31
         let mut array = Array::<F>::new(8);
 
-        #[unroll]
+        // #[unroll]
         for i in 0..8 {
             array[i] = smem_slice[8 * lane_id + i];
         }
 
         cmma::store::<F>(smem_slice, accumulator, 16, cmma::MatrixLayout::RowMajor);
 
-        #[unroll]
+        // #[unroll]
         for i in 0..8 {
             smem_slice[8 * lane_id + i] += array[i];
         }
