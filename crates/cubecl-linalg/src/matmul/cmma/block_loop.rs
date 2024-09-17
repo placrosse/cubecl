@@ -102,13 +102,13 @@ impl BlockLoop for DoubleBufferLoop {
 
         let ids = runtime_info.ids;
         for iteration in 0..num_loops {
-            let k_offset_0 = (iteration * 2) * block_size_k;
-
             if ids.team == 0 {
+                let k_offset = (iteration * 2) * block_size_k;
+
                 load_to_shared_memories::<F, FC>(
                     lhs,
                     rhs,
-                    k_offset_0,
+                    k_offset,
                     shared_memories_0,
                     runtime_info,
                     comptime_info,
