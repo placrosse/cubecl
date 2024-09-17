@@ -3,22 +3,19 @@ use cubecl_core::prelude::*;
 
 use crate::matmul::cmma::base::RuntimeCmmaInfo;
 
-use super::{
-    super::{
-        block_io::{
-            base::BlockWriter, horizontal_block_check::HorizontalCheckBlockIO,
-            unchecked_block::UncheckedBlockIO, vertical_block_check::VerticalCheckBlockIO,
-            whole_block_check::WholeCheckBlockIO,
-        },
-        config::ComptimeCmmaInfo,
+use super::super::{
+    block_io::{
+        base::BlockWriter, horizontal_block_check::HorizontalCheckBlockIO,
+        unchecked_block::UncheckedBlockIO, vertical_block_check::VerticalCheckBlockIO,
+        whole_block_check::WholeCheckBlockIO,
     },
-    smem_store::SmemStore,
+    config::ComptimeCmmaInfo,
 };
 
 #[cube]
 /// Writes accumulators to global memory
 pub(crate) trait OutputWriter: Send + Sync + 'static {
-    fn write_to_output<F: Float, S: SmemStore>(
+    fn write_to_output<F: Float>(
         out: &mut Tensor<F>,
         accumulators: Sequence<cmma::Matrix<F>>,
         runtime_info: RuntimeCmmaInfo,

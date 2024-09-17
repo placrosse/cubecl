@@ -1,7 +1,7 @@
 use cubecl_core as cubecl;
 use cubecl_core::prelude::*;
 
-use crate::matmul::cmma::base::RuntimeCmmaInfo;
+use crate::matmul::cmma::{base::RuntimeCmmaInfo, write_output::smem_store::OverrideStore};
 
 use super::{
     super::config::ComptimeCmmaInfo,
@@ -13,7 +13,7 @@ pub(crate) struct ReuseSmemWriter;
 
 #[cube]
 impl OutputWriter for ReuseSmemWriter {
-    fn write_to_output<F: Float, S: SmemStore>(
+    fn write_to_output<F: Float>(
         out: &mut Tensor<F>,
         accumulators: Sequence<cmma::Matrix<F>>,
         runtime_info: RuntimeCmmaInfo,
@@ -34,7 +34,7 @@ impl OutputWriter for ReuseSmemWriter {
 
         #[unroll]
         for n in 0..num_accumulators {
-            S::store(slice, accumulators.index(n));
+            OverrideStore::store(slice, accumulators.index(n), runtime_info.ids);
 
             shared_memory_to_output(out, ids.coop, acc_sm, n, runtime_info, comptime_info);
         }

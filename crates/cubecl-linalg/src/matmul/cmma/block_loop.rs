@@ -181,13 +181,8 @@ fn write_out<F: Float, S: SmemStore>(
     if comptime_info.write_out_reuse_smem {
         // Can't use with double buffering
         // TODO pretty ugly that we need to pass S and not use it
-        ReuseSmemWriter::write_to_output::<F, OverrideStore>(
-            out,
-            accumulators,
-            runtime_info,
-            comptime_info,
-        );
+        ReuseSmemWriter::write_to_output::<F>(out, accumulators, runtime_info, comptime_info);
     } else {
-        LargeSmemWriter::write_to_output::<F, S>(out, accumulators, runtime_info, comptime_info);
+        LargeSmemWriter::<S>::write_to_output::<F>(out, accumulators, runtime_info, comptime_info);
     }
 }

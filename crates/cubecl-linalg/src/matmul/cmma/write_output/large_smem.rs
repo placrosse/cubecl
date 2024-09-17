@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use cubecl_core as cubecl;
 use cubecl_core::prelude::*;
 
@@ -9,11 +11,13 @@ use super::{
     smem_store::SmemStore,
 };
 
-pub(crate) struct LargeSmemWriter;
+pub(crate) struct LargeSmemWriter<S: SmemStore> {
+    _s: PhantomData<S>,
+}
 
 #[cube]
-impl OutputWriter for LargeSmemWriter {
-    fn write_to_output<F: Float, S: SmemStore>(
+impl<S: SmemStore> OutputWriter for LargeSmemWriter<S> {
+    fn write_to_output<F: Float>(
         out: &mut Tensor<F>,
         accumulators: Sequence<cmma::Matrix<F>>,
         runtime_info: RuntimeCmmaInfo,
@@ -39,7 +43,7 @@ impl OutputWriter for LargeSmemWriter {
 
             let slice = acc_sm.slice_mut(slice_start, slice_end);
 
-            S::store(slice, accumulators.index(n));
+            S::store(slice, accumulators.index(n), runtime_info.ids);
         }
 
         #[unroll]
