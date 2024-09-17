@@ -96,51 +96,73 @@ impl BlockLoop for DoubleBufferLoop {
         runtime_info: RuntimeCmmaInfo,
         #[comptime] comptime_info: ComptimeCmmaInfo,
     ) {
-        // let block_size_k = comptime_info.block_size_k;
-        // let write_out_reuse_smem = comptime_info.write_out_reuse_smem;
+        let block_size_k = comptime_info.block_size_k;
+        let write_out_reuse_smem = comptime_info.write_out_reuse_smem;
 
-        // // Equals ceil(dims.k / block_size_k)
-        // let dims = runtime_info.dims;
-        // let num_loops = (dims.k + block_size_k - 1) / block_size_k;
+        // Equals ceil(dims.k / block_size_k)
+        let dims = runtime_info.dims;
+        let num_blocks = (dims.k + block_size_k - 1) / block_size_k;
+        let num_loops = (num_blocks + 1) / 2;
 
-        // for block in 0..num_loops {
-        //     let k_offset = block * block_size_k;
+        for iteration in 0..num_loops {
+            let k_offset_0 = iteration * block_size_k * 2;
+            let k_offset_1 = k_offset_0 + block_size_k;
 
-        //     load_to_shared_memories::<F, FC>(
-        //         lhs,
-        //         rhs,
-        //         k_offset,
-        //         shared_memories,
-        //         runtime_info,
-        //         comptime_info,
-        //     );
+            load_to_shared_memories::<F, FC>(
+                lhs,
+                rhs,
+                k_offset_0,
+                shared_memories,
+                runtime_info,
+                comptime_info,
+            );
 
-        //     sync_units();
+            sync_units();
 
-        //     compute_loop::<F, FC>(
-        //         shared_memories,
-        //         &mut cmma_matrices,
-        //         runtime_info.ids,
-        //         comptime_info,
-        //     );
+            compute_loop::<F, FC>(
+                shared_memories,
+                &mut cmma_matrices,
+                runtime_info.ids,
+                comptime_info,
+            );
 
-        //     sync_units();
-        // }
+            sync_units();
 
-        // if write_out_reuse_smem {
-        //     ReuseSmemWriter::write_to_output(
-        //         out,
-        //         cmma_matrices.accumulators,
-        //         runtime_info,
-        //         comptime_info,
-        //     );
-        // } else {
-        //     LargeSmemWriter::write_to_output(
-        //         out,
-        //         cmma_matrices.accumulators,
-        //         runtime_info,
-        //         comptime_info,
-        //     );
-        // }
+            load_to_shared_memories::<F, FC>(
+                lhs,
+                rhs,
+                k_offset_1,
+                shared_memories,
+                runtime_info,
+                comptime_info,
+            );
+
+            sync_units();
+
+            compute_loop::<F, FC>(
+                shared_memories,
+                &mut cmma_matrices,
+                runtime_info.ids,
+                comptime_info,
+            );
+
+            sync_units();
+        }
+
+        if write_out_reuse_smem {
+            ReuseSmemWriter::write_to_output(
+                out,
+                cmma_matrices.accumulators,
+                runtime_info,
+                comptime_info,
+            );
+        } else {
+            LargeSmemWriter::write_to_output(
+                out,
+                cmma_matrices.accumulators,
+                runtime_info,
+                comptime_info,
+            );
+        }
     }
 }
