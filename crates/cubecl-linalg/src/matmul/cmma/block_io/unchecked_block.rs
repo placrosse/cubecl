@@ -40,7 +40,7 @@ impl<F: Float, FC: Float> BlockLoader<F, FC> for UncheckedBlockIO {
 impl<F: Float> BlockWriter<F> for UncheckedBlockIO {
     fn write_output(
         out: &mut Tensor<F>,
-        accumulator_sm: SharedMemory<F>,
+        accumulator_sm: &SharedMemory<F>,
         batch_offset: u32,
         read_position: u32,
         write_row: u32,

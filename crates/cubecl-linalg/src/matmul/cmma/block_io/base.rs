@@ -21,7 +21,7 @@ pub(crate) trait BlockWriter<F: Float>: Send + Sync + 'static {
     #[allow(clippy::too_many_arguments)]
     fn write_output(
         out: &mut Tensor<F>,
-        accumulator_sm: SharedMemory<F>,
+        accumulator_sm: &SharedMemory<F>,
         batch_offset: u32,
         read_position: u32,
         write_row: u32,

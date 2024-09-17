@@ -13,21 +13,25 @@ pub(crate) struct ReuseSmemWriter;
 
 #[cube]
 impl OutputWriter for ReuseSmemWriter {
+    fn make_smem<F: Float>(#[comptime] comptime_info: ComptimeCmmaInfo) -> SharedMemory<F> {
+        let tile_size = comptime_info.tile_size;
+        let smem_size = comptime_info.num_coops * tile_size * tile_size;
+
+        SharedMemory::<F>::new(smem_size)
+    }
+
     fn write_to_output<F: Float>(
         out: &mut Tensor<F>,
         accumulators: Sequence<cmma::Matrix<F>>,
+        acc_sm: &mut SharedMemory<F>,
         runtime_info: RuntimeCmmaInfo,
         #[comptime] comptime_info: ComptimeCmmaInfo,
     ) {
         let num_accumulators = comptime_info.num_accumulators;
         let tile_size = comptime_info.tile_size;
-        let num_coops = comptime_info.num_coops;
         let ids = runtime_info.ids;
 
         let sm_stride = tile_size * tile_size;
-        let sm_size = num_coops * sm_stride;
-
-        let acc_sm = SharedMemory::<F>::new(sm_size);
 
         let slice_offset = ids.coop * sm_stride;
         let slice = acc_sm.slice_mut_unsafe(slice_offset, slice_offset + sm_stride);

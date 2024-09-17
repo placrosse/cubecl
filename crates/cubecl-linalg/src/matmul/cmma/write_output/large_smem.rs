@@ -17,21 +17,25 @@ pub(crate) struct LargeSmemWriter<S: SmemStore> {
 
 #[cube]
 impl<S: SmemStore> OutputWriter for LargeSmemWriter<S> {
+    fn make_smem<F: Float>(#[comptime] comptime_info: ComptimeCmmaInfo) -> SharedMemory<F> {
+        let tile_size = comptime_info.tile_size;
+        let smem_size =
+            comptime_info.num_accumulators * comptime_info.num_coops * tile_size * tile_size;
+
+        SharedMemory::<F>::new(smem_size)
+    }
+
     fn write_to_output<F: Float>(
         out: &mut Tensor<F>,
         accumulators: Sequence<cmma::Matrix<F>>,
+        acc_sm: &mut SharedMemory<F>,
         runtime_info: RuntimeCmmaInfo,
         #[comptime] comptime_info: ComptimeCmmaInfo,
     ) {
-        let num_accumulators = comptime_info.num_accumulators;
         let tile_size = comptime_info.tile_size;
-        let num_coops = comptime_info.num_coops;
         let ids = runtime_info.ids;
-
+        let num_accumulators = comptime_info.num_accumulators;
         let smem_stride = tile_size * tile_size;
-        let smem_size = num_accumulators * num_coops * smem_stride;
-
-        let mut acc_sm = SharedMemory::<F>::new(smem_size);
 
         let slice_offset = ids.coop * num_accumulators * smem_stride;
         let smem_position_base = num_accumulators * ids.coop;

@@ -75,7 +75,14 @@ impl BlockLoop for SingleBufferLoop {
             sync_units();
         }
 
-        write_out::<F, OverrideStore>(out, cmma_matrices.accumulators, runtime_info, comptime_info);
+        let mut acc_smem = LargeSmemWriter::<OverrideStore>::make_smem(comptime_info);
+        write_out::<F, OverrideStore>(
+            out,
+            cmma_matrices.accumulators,
+            &mut acc_smem,
+            runtime_info,
+            comptime_info,
+        );
     }
 }
 
@@ -151,11 +158,15 @@ impl BlockLoop for DoubleBufferLoop {
             }
         }
 
+        // TODO ugly that OverrideStore is needed but useless
+        let mut acc_smem = LargeSmemWriter::<OverrideStore>::make_smem(comptime_info);
+
         // 0.003
         if ids.team == 0 {
             write_out::<F, OverrideStore>(
                 out,
                 cmma_matrices_0.accumulators,
+                &mut acc_smem,
                 runtime_info,
                 comptime_info,
             );
@@ -168,6 +179,7 @@ impl BlockLoop for DoubleBufferLoop {
             write_out::<F, AddStore>(
                 out,
                 cmma_matrices_1.accumulators,
+                &mut acc_smem,
                 runtime_info,
                 comptime_info,
             );
@@ -179,14 +191,27 @@ impl BlockLoop for DoubleBufferLoop {
 fn write_out<F: Float, S: SmemStore>(
     out: &mut Tensor<F>,
     accumulators: Sequence<cmma::Matrix<F>>,
+    acc_smem: &mut SharedMemory<F>,
     runtime_info: RuntimeCmmaInfo,
     #[comptime] comptime_info: ComptimeCmmaInfo,
 ) {
     if comptime_info.write_out_reuse_smem {
         // Can't use with double buffering
         // TODO pretty ugly that we need to pass S and not use it
-        ReuseSmemWriter::write_to_output::<F>(out, accumulators, runtime_info, comptime_info);
+        ReuseSmemWriter::write_to_output::<F>(
+            out,
+            accumulators,
+            acc_smem,
+            runtime_info,
+            comptime_info,
+        );
     } else {
-        LargeSmemWriter::<S>::write_to_output::<F>(out, accumulators, runtime_info, comptime_info);
+        LargeSmemWriter::<S>::write_to_output::<F>(
+            out,
+            accumulators,
+            acc_smem,
+            runtime_info,
+            comptime_info,
+        );
     }
 }

@@ -15,9 +15,12 @@ use super::super::{
 #[cube]
 /// Writes accumulators to global memory
 pub(crate) trait OutputWriter: Send + Sync + 'static {
+    fn make_smem<F: Float>(#[comptime] comptime_info: ComptimeCmmaInfo) -> SharedMemory<F>;
+
     fn write_to_output<F: Float>(
         out: &mut Tensor<F>,
         accumulators: Sequence<cmma::Matrix<F>>,
+        accumulator_smem: &mut SharedMemory<F>,
         runtime_info: RuntimeCmmaInfo,
         #[comptime] comptime_info: ComptimeCmmaInfo,
     );
@@ -27,7 +30,7 @@ pub(crate) trait OutputWriter: Send + Sync + 'static {
 pub(crate) fn shared_memory_to_output<F: Float>(
     out: &mut Tensor<F>,
     smem_position: u32,
-    accumulator_smem: SharedMemory<F>,
+    accumulator_smem: &SharedMemory<F>,
     n_iter: u32,
     runtime_info: RuntimeCmmaInfo,
     #[comptime] comptime_info: ComptimeCmmaInfo,
@@ -80,7 +83,7 @@ pub(crate) fn shared_memory_to_output<F: Float>(
 fn write_tile<F: Float, W: BlockWriter<F>>(
     out: &mut Tensor<F>,
     smem_position: u32,
-    accumulator_smem: SharedMemory<F>,
+    accumulator_smem: &SharedMemory<F>,
     n_iter: u32,
     runtime_info: RuntimeCmmaInfo,
     #[comptime] comptime_info: ComptimeCmmaInfo,

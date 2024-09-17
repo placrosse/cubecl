@@ -59,7 +59,7 @@ fn write_output_test<F: Float>(
         shared_memory_to_output(
             out,
             smem_position_base + n_iter,
-            accumulate,
+            &accumulate,
             n_iter,
             runtime_info,
             comptime_info,
