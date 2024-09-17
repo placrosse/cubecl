@@ -19,7 +19,7 @@ pub fn test_matmul_cmma_one_cube<R: Runtime>(device: &R::Device) {
         k: 64,
         n: 64,
         batch: 1,
-        factor: 100000.,
+        factor: 1000.,
         epsilon: 0.1,
         compute_f16: true,
     }
