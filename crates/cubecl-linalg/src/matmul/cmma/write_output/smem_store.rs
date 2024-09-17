@@ -21,19 +21,19 @@ impl SmemStore for OverrideStore {
 #[cube]
 impl SmemStore for AddStore {
     fn store<F: Float>(smem_slice: &mut SliceMut<'_, F>, accumulator: &cmma::Matrix<F>, ids: Ids) {
-        let lane_id = ids.lane; // 0..31
+        let lane_offset = 8 * ids.lane; 
         let mut array = Array::<F>::new(8);
 
         #[unroll]
         for i in 0..8 {
-            array[i] = smem_slice[8 * lane_id + i];
+            array[i] = smem_slice[lane_offset + i] + F::new(5.);
         }
 
         cmma::store::<F>(smem_slice, accumulator, 16, cmma::MatrixLayout::RowMajor);
 
         #[unroll]
         for i in 0..8 {
-            smem_slice[8 * lane_id + i] += array[i];
+            smem_slice[lane_offset + i] += array[i];
         }
     }
 }
