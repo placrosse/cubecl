@@ -21,29 +21,10 @@ pub fn cmma_kernel<F: Float, FC: Float>(
     let offsets = calculate_offsets::<F>(lhs, rhs, out, comptime_info);
     let runtime_info = RuntimeCmmaInfo { ids, dims, offsets };
 
-    let shared_memories = make_shared_memories::<FC>(comptime_info);
-    let cmma_matrices = make_cmma_matrices::<F, FC>(comptime_info);
-
     if comptime_info.double_buffering {
-        DoubleBufferLoop::block_loop::<F, FC>(
-            lhs,
-            rhs,
-            out,
-            shared_memories,
-            cmma_matrices,
-            runtime_info,
-            comptime_info,
-        );
+        DoubleBufferLoop::block_loop::<F, FC>(lhs, rhs, out, runtime_info, comptime_info);
     } else {
-        SingleBufferLoop::block_loop::<F, FC>(
-            lhs,
-            rhs,
-            out,
-            shared_memories,
-            cmma_matrices,
-            runtime_info,
-            comptime_info,
-        );
+        SingleBufferLoop::block_loop::<F, FC>(lhs, rhs, out, runtime_info, comptime_info);
     }
 }
 
@@ -151,7 +132,7 @@ pub(crate) fn get_row_col(#[comptime] comptime_info: ComptimeCmmaInfo) -> (u32, 
 }
 
 #[cube]
-fn make_shared_memories<FC: Float>(#[comptime] config: ComptimeCmmaInfo) -> SharedMemories<FC> {
+pub(crate) fn make_shared_memories<FC: Float>(#[comptime] config: ComptimeCmmaInfo) -> SharedMemories<FC> {
     let block_size_m = config.block_size_m;
     let block_size_k = config.block_size_k;
     let block_size_n = config.block_size_n;

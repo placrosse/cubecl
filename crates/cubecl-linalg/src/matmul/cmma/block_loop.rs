@@ -1,8 +1,10 @@
 use cubecl_core as cubecl;
 use cubecl_core::prelude::*;
 
+use crate::matmul::cmma::base::{make_cmma_matrices, make_shared_memories};
+
 use super::{
-    base::{CmmaMatrices, RuntimeCmmaInfo, SharedMemories},
+    base::RuntimeCmmaInfo,
     compute_loop::compute_loop,
     config::ComptimeCmmaInfo,
     load_shared_memory::load_to_shared_memories,
@@ -15,8 +17,6 @@ pub(crate) trait BlockLoop {
         lhs: &Tensor<F>,
         rhs: &Tensor<F>,
         out: &mut Tensor<F>,
-        shared_memories: SharedMemories<FC>,
-        cmma_matrices: CmmaMatrices<F, FC>,
         runtime_info: RuntimeCmmaInfo,
         #[comptime] comptime_info: ComptimeCmmaInfo,
     );
@@ -31,13 +31,14 @@ impl BlockLoop for SingleBufferLoop {
         lhs: &Tensor<F>,
         rhs: &Tensor<F>,
         out: &mut Tensor<F>,
-        shared_memories: SharedMemories<FC>,
-        mut cmma_matrices: CmmaMatrices<F, FC>,
         runtime_info: RuntimeCmmaInfo,
         #[comptime] comptime_info: ComptimeCmmaInfo,
     ) {
         let block_size_k = comptime_info.block_size_k;
         let write_out_reuse_smem = comptime_info.write_out_reuse_smem;
+
+        let shared_memories = make_shared_memories::<FC>(comptime_info);
+        let mut cmma_matrices = make_cmma_matrices::<F, FC>(comptime_info);
 
         // Equals ceil(dims.k / block_size_k)
         let dims = runtime_info.dims;
@@ -91,13 +92,15 @@ impl BlockLoop for DoubleBufferLoop {
         lhs: &Tensor<F>,
         rhs: &Tensor<F>,
         out: &mut Tensor<F>,
-        shared_memories: SharedMemories<FC>,
-        mut cmma_matrices: CmmaMatrices<F, FC>,
         runtime_info: RuntimeCmmaInfo,
         #[comptime] comptime_info: ComptimeCmmaInfo,
     ) {
         let block_size_k = comptime_info.block_size_k;
-        let write_out_reuse_smem = comptime_info.write_out_reuse_smem;
+
+        let shared_memories_0 = make_shared_memories::<FC>(comptime_info);
+        let shared_memories_1 = make_shared_memories::<FC>(comptime_info);
+        let mut cmma_matrices_0 = make_cmma_matrices::<F, FC>(comptime_info);
+        let mut cmma_matrices_1 = make_cmma_matrices::<F, FC>(comptime_info);
 
         // Equals ceil(dims.k / block_size_k)
         let dims = runtime_info.dims;
@@ -112,7 +115,7 @@ impl BlockLoop for DoubleBufferLoop {
                 lhs,
                 rhs,
                 k_offset_0,
-                shared_memories,
+                shared_memories_0,
                 runtime_info,
                 comptime_info,
             );
@@ -120,19 +123,17 @@ impl BlockLoop for DoubleBufferLoop {
             sync_units();
 
             compute_loop::<F, FC>(
-                shared_memories,
-                &mut cmma_matrices,
+                shared_memories_0,
+                &mut cmma_matrices_0,
                 runtime_info.ids,
                 comptime_info,
             );
-
-            sync_units();
 
             load_to_shared_memories::<F, FC>(
                 lhs,
                 rhs,
                 k_offset_1,
-                shared_memories,
+                shared_memories_1,
                 runtime_info,
                 comptime_info,
             );
@@ -140,29 +141,41 @@ impl BlockLoop for DoubleBufferLoop {
             sync_units();
 
             compute_loop::<F, FC>(
-                shared_memories,
-                &mut cmma_matrices,
+                shared_memories_1,
+                &mut cmma_matrices_1,
                 runtime_info.ids,
                 comptime_info,
             );
-
-            sync_units();
         }
 
-        if write_out_reuse_smem {
-            ReuseSmemWriter::write_to_output(
-                out,
-                cmma_matrices.accumulators,
-                runtime_info,
-                comptime_info,
-            );
-        } else {
-            LargeSmemWriter::write_to_output(
-                out,
-                cmma_matrices.accumulators,
-                runtime_info,
-                comptime_info,
-            );
-        }
+        write_out(
+            out,
+            cmma_matrices_0.accumulators,
+            runtime_info,
+            comptime_info,
+        );
+
+        sync_units();
+
+        write_out(
+            out,
+            cmma_matrices_1.accumulators,
+            runtime_info,
+            comptime_info,
+        );
+    }
+}
+
+#[cube]
+fn write_out<F: Float>(
+    out: &mut Tensor<F>,
+    accumulators: Sequence<cmma::Matrix<F>>,
+    runtime_info: RuntimeCmmaInfo,
+    #[comptime] comptime_info: ComptimeCmmaInfo,
+) {
+    if comptime_info.write_out_reuse_smem {
+        ReuseSmemWriter::write_to_output(out, accumulators, runtime_info, comptime_info);
+    } else {
+        LargeSmemWriter::write_to_output(out, accumulators, runtime_info, comptime_info);
     }
 }
