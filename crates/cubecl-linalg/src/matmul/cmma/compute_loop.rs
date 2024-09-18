@@ -107,6 +107,10 @@ pub(crate) fn compute_loop<F: Float, FC: Float>(
     let lhs_slice = shared_memories
         .lhs
         .slice(shared_lhs_pos, shared_lhs_pos + smem_stride);
+    
+    // HERE
+    //cmma::load::<FC>(lhs, lhs_slice, 16);
+    //
 
     #[unroll]
     for n in 0..num_accumulators {
@@ -120,7 +124,10 @@ pub(crate) fn compute_loop<F: Float, FC: Float>(
             .rhs
             .slice(shared_rhs_pos, shared_rhs_pos + smem_stride);
 
+        // HERE
         cmma::load::<FC>(lhs, lhs_slice, 16);
+        //
+
         cmma::load::<FC>(rhs, rhs_slice, 16);
 
         cmma::execute::<FC, FC, F, F>(lhs, rhs, accumulator, accumulator);
