@@ -12,10 +12,17 @@ pub(crate) fn compute_loop<F: Float, FC: Float>(
     ids: Ids,
     #[comptime] comptime_info: ComptimeCmmaInfo,
 ) {
+    let unroll_k = comptime_info.unroll_k;
+    let unroll_n = comptime_info.unroll_n;
+
+    let block_size_k = comptime_info.block_size_k;
     let block_size_n = comptime_info.block_size_n;
+
     let tile_size = comptime_info.tile_size;
     let num_accumulators = comptime_info.num_accumulators;
     let num_coop_per_row = (block_size_n / tile_size) / num_accumulators;
+    let num_tiles_in_k = block_size_k / tile_size;
+    let smem_stride = tile_size * tile_size;
 
     let tile_row = ids.coop / num_coop_per_row;
     let tile_col_base = (ids.coop % num_coop_per_row) * num_accumulators;
@@ -23,14 +30,8 @@ pub(crate) fn compute_loop<F: Float, FC: Float>(
     let lhs = &cmma_matrices.lhs;
     let rhs = &cmma_matrices.rhs;
     let accumulators = &cmma_matrices.accumulators;
-    let unroll = comptime_info.unroll;
 
-    let block_size_k = comptime_info.block_size_k;
-    let num_tiles_in_k = block_size_k / tile_size;
-
-    let smem_stride = tile_size * tile_size;
-
-    #[unroll(unroll)]
+    #[unroll(unroll_k)]
     for k_iter in 0..num_tiles_in_k {
         let shared_lhs_tile = tile_row * num_tiles_in_k + k_iter;
         let shared_lhs_pos = shared_lhs_tile * smem_stride;
@@ -39,7 +40,7 @@ pub(crate) fn compute_loop<F: Float, FC: Float>(
             .slice(shared_lhs_pos, shared_lhs_pos + smem_stride);
         cmma::load::<FC>(lhs, lhs_slice, 16);
 
-        #[unroll]
+        #[unroll(unroll_n)]
         for n in 0..num_accumulators {
             let tile_col = tile_col_base + n;
             let accumulator = accumulators.index(n);

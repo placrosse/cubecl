@@ -27,11 +27,11 @@ pub fn test_matmul_cmma_one_cube<R: Runtime>(device: &R::Device) {
 }
 
 macro_rules! alternate_block_sizes {
-    ($name:ident, $b_mn:expr, $b_k:expr) => {
+    ($name:ident, $b_m:expr, $b_k:expr, $b_n:expr) => {
         pub fn $name<R: Runtime>(device: &R::Device) {
-            let num_compute_warps = $b_mn / 16;
+            let num_compute_warps = $b_m / 16;
             let num_buffers = $b_k / 16;
-            let num_accumulators = $b_mn / 16;
+            let num_accumulators = $b_n / 16;
             MatmulTestCase {
                 m: 128,
                 k: 128,
@@ -54,14 +54,148 @@ macro_rules! alternate_block_sizes {
     };
 }
 
-alternate_block_sizes!(test_matmul_cmma_16_16, 16, 16);
-alternate_block_sizes!(test_matmul_cmma_32_16, 32, 16);
-alternate_block_sizes!(test_matmul_cmma_32_32, 32, 32);
-alternate_block_sizes!(test_matmul_cmma_64_16, 64, 16);
-alternate_block_sizes!(test_matmul_cmma_64_32, 64, 32);
-alternate_block_sizes!(test_matmul_cmma_64_64, 64, 64);
-alternate_block_sizes!(test_matmul_cmma_128_16, 128, 16);
-alternate_block_sizes!(test_matmul_cmma_128_32, 128, 32);
+alternate_block_sizes!(test_matmul_cmma_16_16_16, 16, 16, 16);
+// 16 x 16 x 32
+alternate_block_sizes!(test_matmul_cmma_16_16_32, 16, 16, 32);
+// 16 x 16 x 64
+alternate_block_sizes!(test_matmul_cmma_16_16_64, 16, 16, 64);
+// 16 x 16 x 128
+alternate_block_sizes!(test_matmul_cmma_16_16_128, 16, 16, 128);
+
+// 16 x 32 x 16
+alternate_block_sizes!(test_matmul_cmma_16_32_16, 16, 32, 16);
+// 16 x 32 x 32
+alternate_block_sizes!(test_matmul_cmma_16_32_32, 16, 32, 32);
+// 16 x 32 x 64
+alternate_block_sizes!(test_matmul_cmma_16_32_64, 16, 32, 64);
+// 16 x 32 x 128
+alternate_block_sizes!(test_matmul_cmma_16_32_128, 16, 32, 128);
+
+// 16 x 64 x 16
+alternate_block_sizes!(test_matmul_cmma_16_64_16, 16, 64, 16);
+// 16 x 64 x 32
+alternate_block_sizes!(test_matmul_cmma_16_64_32, 16, 64, 32);
+// 16 x 64 x 64
+alternate_block_sizes!(test_matmul_cmma_16_64_64, 16, 64, 64);
+// 16 x 64 x 128
+alternate_block_sizes!(test_matmul_cmma_16_64_128, 16, 64, 128);
+
+// 16 x 128 x 16
+alternate_block_sizes!(test_matmul_cmma_16_128_16, 16, 128, 16);
+// 16 x 128 x 32
+alternate_block_sizes!(test_matmul_cmma_16_128_32, 16, 128, 32);
+// 16 x 128 x 64
+alternate_block_sizes!(test_matmul_cmma_16_128_64, 16, 128, 64);
+// 16 x 128 x 128
+alternate_block_sizes!(test_matmul_cmma_16_128_128, 16, 128, 128);
+
+// 32 x 16 x 16
+alternate_block_sizes!(test_matmul_cmma_32_16_16, 32, 16, 16);
+// 32 x 16 x 32
+alternate_block_sizes!(test_matmul_cmma_32_16_32, 32, 16, 32);
+// 32 x 16 x 64
+alternate_block_sizes!(test_matmul_cmma_32_16_64, 32, 16, 64);
+// 32 x 16 x 128
+alternate_block_sizes!(test_matmul_cmma_32_16_128, 32, 16, 128);
+
+// 32 x 32 x 16
+alternate_block_sizes!(test_matmul_cmma_32_32_16, 32, 32, 16);
+// 32 x 32 x 32
+alternate_block_sizes!(test_matmul_cmma_32_32_32, 32, 32, 32);
+// 32 x 32 x 64
+alternate_block_sizes!(test_matmul_cmma_32_32_64, 32, 32, 64);
+// 32 x 32 x 128
+alternate_block_sizes!(test_matmul_cmma_32_32_128, 32, 32, 128);
+
+// 32 x 64 x 16
+alternate_block_sizes!(test_matmul_cmma_32_64_16, 32, 64, 16);
+// 32 x 64 x 32
+alternate_block_sizes!(test_matmul_cmma_32_64_32, 32, 64, 32);
+// 32 x 64 x 64
+alternate_block_sizes!(test_matmul_cmma_32_64_64, 32, 64, 64);
+// 32 x 64 x 128
+alternate_block_sizes!(test_matmul_cmma_32_64_128, 32, 64, 128);
+
+// 32 x 128 x 16
+alternate_block_sizes!(test_matmul_cmma_32_128_16, 32, 128, 16);
+// 32 x 128 x 32
+alternate_block_sizes!(test_matmul_cmma_32_128_32, 32, 128, 32);
+// 32 x 128 x 64
+alternate_block_sizes!(test_matmul_cmma_32_128_64, 32, 128, 64);
+// 32 x 128 x 128
+alternate_block_sizes!(test_matmul_cmma_32_128_128, 32, 128, 128);
+
+// 64 x 16 x 16
+alternate_block_sizes!(test_matmul_cmma_64_16_16, 64, 16, 16);
+// 64 x 16 x 32
+alternate_block_sizes!(test_matmul_cmma_64_16_32, 64, 16, 32);
+// 64 x 16 x 64
+alternate_block_sizes!(test_matmul_cmma_64_16_64, 64, 16, 64);
+// 64 x 16 x 128
+alternate_block_sizes!(test_matmul_cmma_64_16_128, 64, 16, 128);
+
+// 64 x 32 x 16
+alternate_block_sizes!(test_matmul_cmma_64_32_16, 64, 32, 16);
+// 64 x 32 x 32
+alternate_block_sizes!(test_matmul_cmma_64_32_32, 64, 32, 32);
+// 64 x 32 x 64
+alternate_block_sizes!(test_matmul_cmma_64_32_64, 64, 32, 64);
+// 64 x 32 x 128
+alternate_block_sizes!(test_matmul_cmma_64_32_128, 64, 32, 128);
+
+// 64 x 64 x 16
+alternate_block_sizes!(test_matmul_cmma_64_64_16, 64, 64, 16);
+// 64 x 64 x 32
+alternate_block_sizes!(test_matmul_cmma_64_64_32, 64, 64, 32);
+// 64 x 64 x 64
+alternate_block_sizes!(test_matmul_cmma_64_64_64, 64, 64, 64);
+// 64 x 64 x 128
+alternate_block_sizes!(test_matmul_cmma_64_64_128, 64, 64, 128);
+
+// 64 x 128 x 16
+alternate_block_sizes!(test_matmul_cmma_64_128_16, 64, 128, 16);
+// 64 x 128 x 32
+alternate_block_sizes!(test_matmul_cmma_64_128_32, 64, 128, 32);
+// 64 x 128 x 64
+alternate_block_sizes!(test_matmul_cmma_64_128_64, 64, 128, 64);
+// 64 x 128 x 128
+alternate_block_sizes!(test_matmul_cmma_64_128_128, 64, 128, 128);
+
+// 128 x 16 x 16
+alternate_block_sizes!(test_matmul_cmma_128_16_16, 128, 16, 16);
+// 128 x 16 x 32
+alternate_block_sizes!(test_matmul_cmma_128_16_32, 128, 16, 32);
+// 128 x 16 x 64
+alternate_block_sizes!(test_matmul_cmma_128_16_64, 128, 16, 64);
+// 128 x 16 x 128
+alternate_block_sizes!(test_matmul_cmma_128_16_128, 128, 16, 128);
+
+// 128 x 32 x 16
+alternate_block_sizes!(test_matmul_cmma_128_32_16, 128, 32, 16);
+// 128 x 32 x 32
+alternate_block_sizes!(test_matmul_cmma_128_32_32, 128, 32, 32);
+// 128 x 32 x 64
+alternate_block_sizes!(test_matmul_cmma_128_32_64, 128, 32, 64);
+// 128 x 32 x 128
+alternate_block_sizes!(test_matmul_cmma_128_32_128, 128, 32, 128);
+
+// 128 x 64 x 16
+alternate_block_sizes!(test_matmul_cmma_128_64_16, 128, 64, 16);
+// 128 x 64 x 32
+alternate_block_sizes!(test_matmul_cmma_128_64_32, 128, 64, 32);
+// 128 x 64 x 64
+alternate_block_sizes!(test_matmul_cmma_128_64_64, 128, 64, 64);
+// 128 x 64 x 128
+alternate_block_sizes!(test_matmul_cmma_128_64_128, 128, 64, 128);
+
+// 128 x 128 x 16
+alternate_block_sizes!(test_matmul_cmma_128_128_16, 128, 128, 16);
+// 128 x 128 x 32
+alternate_block_sizes!(test_matmul_cmma_128_128_32, 128, 128, 32);
+// 128 x 128 x 64
+alternate_block_sizes!(test_matmul_cmma_128_128_64, 128, 128, 64);
+// 128 x 128 x 128
+alternate_block_sizes!(test_matmul_cmma_128_128_128, 128, 128, 128);
 
 pub fn test_matmul_cmma_several_cubes<R: Runtime>(device: &R::Device) {
     MatmulTestCase {

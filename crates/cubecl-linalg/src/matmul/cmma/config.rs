@@ -53,8 +53,8 @@ pub struct CmmaConfig {
     pub num_buffers: usize,
     /// b_n / tile_size
     pub num_accumulators: usize,
-    /// Whether to unroll loop over k within the shared memory
-    pub unroll: bool,
+    pub unroll_k: bool,
+    pub unroll_n: bool,
     /// Whether to write all accumulators in different spots of a large shared memory or reuse the space
     pub write_out_strategy: WriteOutStrategy,
     /// Order in which to dispatch cubes
@@ -67,7 +67,8 @@ impl Default for CmmaConfig {
             num_compute_warps: 8,
             num_buffers: 1,
             num_accumulators: 8,
-            unroll: false,
+            unroll_k: false,
+            unroll_n: false,
             write_out_strategy: WriteOutStrategy::ReuseSmem,
             cube_dispatch: CubeDispatchStrategy::Swizzle,
         }
@@ -85,7 +86,8 @@ impl CmmaConfig {
             block_size_k: b_k as u32,
             block_size_n: b_n as u32,
             tile_size: CMMA_TILE_SIZE as u32,
-            unroll: self.unroll,
+            unroll_k: self.unroll_k,
+            unroll_n: self.unroll_n,
             check_m_bounds: m % b_m != 0,
             check_k_bounds: k % b_k != 0,
             check_n_bounds: n % b_n != 0,
@@ -158,7 +160,9 @@ pub struct ComptimeCmmaInfo {
     /// Bounds must be checked on rhs dimension
     pub check_n_bounds: bool,
     /// Unroll
-    pub unroll: bool,
+    pub unroll_k: bool,
+    /// Unroll
+    pub unroll_n: bool,
     /// The number of units that can collaborate
     pub coop_dim: u32,
     /// The number of collaboration groups
