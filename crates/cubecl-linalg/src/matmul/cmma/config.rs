@@ -6,13 +6,22 @@ use cubecl_core::prelude::*;
 pub(crate) const CMMA_COOP_DIM: usize = 32;
 pub(crate) const CMMA_TILE_SIZE: usize = 16;
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 /// Defines how data travels from accumulators to global output
 pub enum WriteOutStrategy {
     /// Accumulators for one warp are put concurrently in a shared memory large enough to contain them all
     LargeSmem,
     /// Accumulators for one warp are put sequentially in a shared memory with only one reusable spot
     ReuseSmem,
+}
+
+impl From<WriteOutStrategy> for bool {
+    fn from(value: WriteOutStrategy) -> Self {
+        match value {
+            WriteOutStrategy::LargeSmem => false,
+            WriteOutStrategy::ReuseSmem => true,
+        }
+    }
 }
 
 /// How cubes are dispatched in the hypercube
@@ -38,10 +47,12 @@ impl From<CubeDispatchStrategy> for u32 {
 }
 
 pub struct CmmaConfig {
-    /// Corresponds to the number of tiles in the m and n dimensions for a block
-    pub b_mn: usize,
-    /// Corresponds to the number of tiles in the k dimension for a block
-    pub b_k: usize,
+    /// b_m / tile_size
+    pub num_compute_warps: usize,
+    /// b_k / tile_size
+    pub num_buffers: usize,
+    /// b_n / tile_size
+    pub num_accumulators: usize,
     /// Whether to unroll loop over k within the shared memory
     pub unroll: bool,
     /// Whether to write all accumulators in different spots of a large shared memory or reuse the space
@@ -52,52 +63,36 @@ pub struct CmmaConfig {
 
 impl Default for CmmaConfig {
     fn default() -> Self {
-        Self::new(
-            128,
-            16,
-            false,
-            WriteOutStrategy::ReuseSmem,
-            CubeDispatchStrategy::ColMajor,
-        )
+        Self {
+            num_compute_warps: 8,
+            num_buffers: 1,
+            num_accumulators: 8,
+            unroll: false,
+            write_out_strategy: WriteOutStrategy::ReuseSmem,
+            cube_dispatch: CubeDispatchStrategy::Swizzle,
+        }
     }
 }
 
 impl CmmaConfig {
-    pub(crate) fn new(
-        b_mn: usize,
-        b_k: usize,
-        unroll: bool,
-        write_out_strategy: WriteOutStrategy,
-        cube_dispatch: CubeDispatchStrategy,
-    ) -> CmmaConfig {
-        assert!(b_mn % CMMA_TILE_SIZE == 0);
-        assert!(b_k % CMMA_TILE_SIZE == 0);
-        assert!(b_mn % b_k == 0);
-        CmmaConfig {
-            b_mn,
-            b_k,
-            unroll,
-            write_out_strategy,
-            cube_dispatch,
-        }
-    }
-
     pub(crate) fn comptime_info(&self, m: usize, k: usize, n: usize) -> ComptimeCmmaInfo {
-        let num_coops = self.b_mn * self.b_k / (CMMA_TILE_SIZE * CMMA_TILE_SIZE);
+        let b_m = self.num_compute_warps * CMMA_TILE_SIZE;
+        let b_k = self.num_buffers * CMMA_TILE_SIZE;
+        let b_n = self.num_accumulators * CMMA_TILE_SIZE;
 
         ComptimeCmmaInfo {
-            block_size_m: self.b_mn as u32,
-            block_size_k: self.b_k as u32,
-            block_size_n: self.b_mn as u32,
+            block_size_m: b_m as u32,
+            block_size_k: b_k as u32,
+            block_size_n: b_n as u32,
             tile_size: CMMA_TILE_SIZE as u32,
             unroll: self.unroll,
-            check_m_bounds: m % self.b_mn != 0,
-            check_k_bounds: k % self.b_k != 0,
-            check_n_bounds: n % self.b_mn != 0,
+            check_m_bounds: m % b_m != 0,
+            check_k_bounds: k % b_k != 0,
+            check_n_bounds: n % b_n != 0,
             coop_dim: CMMA_COOP_DIM as u32,
-            num_coops: num_coops as u32,
-            num_accumulators: (self.b_mn / self.b_k) as u32,
-            write_out_reuse_smem: self.write_out_strategy == WriteOutStrategy::ReuseSmem,
+            num_coops: self.num_compute_warps as u32,
+            num_accumulators: self.num_accumulators as u32,
+            write_out_reuse_smem: self.write_out_strategy.into(),
             cube_dispatch: self.cube_dispatch.into(),
         }
     }
@@ -110,8 +105,10 @@ impl CmmaConfig {
         let num_rows = *output_shape.get(rank - 2).unwrap();
         let num_cols = *output_shape.get(rank - 1).unwrap();
 
-        let cubes_x = f32::ceil(num_rows as f32 / self.b_mn as f32) as u32;
-        let cubes_y = f32::ceil(num_cols as f32 / self.b_mn as f32) as u32;
+        let cubes_x =
+            f32::ceil(num_rows as f32 / (self.num_compute_warps * CMMA_TILE_SIZE) as f32) as u32;
+        let cubes_y =
+            f32::ceil(num_cols as f32 / (self.num_accumulators * CMMA_TILE_SIZE) as f32) as u32;
 
         let mut num_iter = 1;
         for shape in output_shape.iter().take(rank - 2) {
@@ -124,7 +121,7 @@ impl CmmaConfig {
     pub(crate) fn cube_dim(&self) -> CubeDim {
         CubeDim {
             x: CMMA_COOP_DIM as u32,
-            y: ((self.b_mn * self.b_k) / (CMMA_TILE_SIZE * CMMA_TILE_SIZE)) as u32,
+            y: self.num_compute_warps as u32,
             z: 1,
         }
     }

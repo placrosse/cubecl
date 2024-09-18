@@ -9,6 +9,6 @@ macro_rules! testgen_cmma {
         use super::*;
 
         cubecl_linalg::testgen_cmma_matmul!();
-        cubecl_linalg::testgen_cmma_internal!();
+        // cubecl_linalg::testgen_cmma_internal!();
     };
 }

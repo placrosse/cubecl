@@ -29,6 +29,9 @@ pub fn test_matmul_cmma_one_cube<R: Runtime>(device: &R::Device) {
 macro_rules! alternate_block_sizes {
     ($name:ident, $b_mn:expr, $b_k:expr) => {
         pub fn $name<R: Runtime>(device: &R::Device) {
+            let num_compute_warps = $b_mn / 16;
+            let num_buffers = $b_k / 16;
+            let num_accumulators = $b_mn / 16;
             MatmulTestCase {
                 m: 128,
                 k: 128,
@@ -40,8 +43,9 @@ macro_rules! alternate_block_sizes {
             }
             .test_cmma::<R>(
                 CmmaConfig {
-                    b_mn: $b_mn,
-                    b_k: $b_k,
+                    num_compute_warps,
+                    num_buffers,
+                    num_accumulators,
                     ..Default::default()
                 },
                 device,
