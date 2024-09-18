@@ -23,21 +23,22 @@ pub(crate) fn compute_loop<F: Float, FC: Float>(
     let lhs = &cmma_matrices.lhs;
     let rhs = &cmma_matrices.rhs;
     let accumulators = &cmma_matrices.accumulators;
+    let unroll = comptime_info.unroll;
 
-    #[unroll]
-    for n in 0..num_accumulators {
-        let block_size_k = comptime_info.block_size_k;
-        let tile_size = comptime_info.tile_size;
-        let unroll = comptime_info.unroll;
+    let block_size_k = comptime_info.block_size_k;
+    let num_tiles_in_k = block_size_k / tile_size;
 
-        let smem_stride = tile_size * tile_size;
-        let num_tiles_in_k = block_size_k / tile_size;
+    #[unroll(unroll)]
+    for k_iter in 0..num_tiles_in_k {
+        #[unroll]
+        for n in 0..num_accumulators {
+            let tile_size = comptime_info.tile_size;
 
-        let tile_col = tile_col_base + n;
-        let accumulator = accumulators.index(n);
+            let smem_stride = tile_size * tile_size;
 
-        #[unroll(unroll)]
-        for k_iter in 0..num_tiles_in_k {
+            let tile_col = tile_col_base + n;
+            let accumulator = accumulators.index(n);
+
             let shared_lhs_tile = tile_row * num_tiles_in_k + k_iter;
             let shared_rhs_tile = tile_col * num_tiles_in_k + k_iter;
             let shared_lhs_pos = shared_lhs_tile * smem_stride;
