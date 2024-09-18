@@ -28,30 +28,29 @@ pub(crate) fn compute_loop<F: Float, FC: Float>(
     let block_size_k = comptime_info.block_size_k;
     let num_tiles_in_k = block_size_k / tile_size;
 
+    let smem_stride = tile_size * tile_size;
+
     #[unroll(unroll)]
     for k_iter in 0..num_tiles_in_k {
+        let shared_lhs_tile = tile_row * num_tiles_in_k + k_iter;
+        let shared_lhs_pos = shared_lhs_tile * smem_stride;
+        let lhs_slice = shared_memories
+            .lhs
+            .slice(shared_lhs_pos, shared_lhs_pos + smem_stride);
+        cmma::load::<FC>(lhs, lhs_slice, 16);
+
         #[unroll]
         for n in 0..num_accumulators {
-            let tile_size = comptime_info.tile_size;
-
-            let smem_stride = tile_size * tile_size;
-
             let tile_col = tile_col_base + n;
             let accumulator = accumulators.index(n);
 
-            let shared_lhs_tile = tile_row * num_tiles_in_k + k_iter;
             let shared_rhs_tile = tile_col * num_tiles_in_k + k_iter;
-            let shared_lhs_pos = shared_lhs_tile * smem_stride;
             let shared_rhs_pos = shared_rhs_tile * smem_stride;
 
-            let lhs_slice = shared_memories
-                .lhs
-                .slice(shared_lhs_pos, shared_lhs_pos + smem_stride);
             let rhs_slice = shared_memories
                 .rhs
                 .slice(shared_rhs_pos, shared_rhs_pos + smem_stride);
 
-            cmma::load::<FC>(lhs, lhs_slice, 16);
             cmma::load::<FC>(rhs, rhs_slice, 16);
 
             cmma::execute::<FC, FC, F, F>(lhs, rhs, accumulator, accumulator);
