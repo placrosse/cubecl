@@ -48,11 +48,11 @@ impl Default for CmmaConfig {
             WriteOutStrategy::ReuseSmem,
             RasterizationStrategy::Swizzle,
             ComputeLoopOrderStrategy::AllAccumulatorsFirst(true),
-            SmemLoaderStrategy::Tilewise(TilingOrderStrategy::RowMajor),
-            SmemLoaderStrategy::Tilewise(TilingOrderStrategy::ColMajor),
+            SmemLoaderStrategy::Continuous(TilingOrderStrategy::RowMajor),
+            SmemLoaderStrategy::Continuous(TilingOrderStrategy::RowMajor),
             MainLoopStrategy::Standard,
             TileDimensionStrategy::M16K16N16,
-            NumComputePlanesStrategy::NumTilesLhs,
+            NumComputePlanesStrategy::NumTilesM,
         )
     }
 }

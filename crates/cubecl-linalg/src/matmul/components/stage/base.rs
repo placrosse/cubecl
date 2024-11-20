@@ -137,3 +137,4 @@ create_cmma_stage!(S4x4x1, 4, 4, 1);
 create_cmma_stage!(S4x4x2, 4, 4, 2);
 create_cmma_stage!(S8x1x1, 8, 1, 1);
 create_cmma_stage!(S8x8x1, 8, 8, 1);
+create_cmma_stage!(S8x8x2, 8, 8, 2);

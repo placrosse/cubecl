@@ -20,6 +20,66 @@ macro_rules! matmul_test_define {
         $plane_dim:expr
     ) => {
         #[test]
+        pub fn TMP() {
+            let problem = MatmulProblem {
+                m: 128,
+                n: 128,
+                k: 64,
+                batches: vec![3],
+                lhs_layout: MatrixLayout::RowMajor,
+                rhs_layout: MatrixLayout::RowMajor,
+                lhs_line_size: 8,
+                rhs_line_size: 8,
+                out_line_size: 8,
+            };
+
+            struct Test {}
+            impl matmul::Algorithm<$eg> for Test {
+                const PLANE_DIM: u32 = $plane_dim;
+                type EG = $eg;
+                type ES = $es;
+                type EA = $ea;
+
+                type TileMatmul = $t_16x16x16<Self::ES, Self::EA>;
+                type StageMatmul = stage::multi_buffer::Matmul<
+                    Self::ES,
+                    Self::EG,
+                    Self::EA,
+                    Self::TileMatmul,
+                    S4x4x2,
+                >;
+                type GlobalMatmul =
+                    global::homogeneous::Matmul<Self::EG, Self::ES, Self::StageMatmul>;
+                type BatchMatmul = batch::one_to_one::Matmul<
+                    Self::EG,
+                    Self::ES,
+                    Self::GlobalMatmul,
+                    batch::NaturalDispatch,
+                >;
+
+                fn cube_dim() -> CubeDim {
+                    CubeDim::new($plane_dim, 4, 1)
+                }
+
+                fn cube_count(_problem: &MatmulProblem) -> CubeCount {
+                    CubeCount::Static(2, 2, 3)
+                }
+            }
+
+            let advanced_config = AdvancedConfig {
+                lhs_tiling_order: TilingOrderConfig::ColMajor,
+                rhs_tiling_order: TilingOrderConfig::RowMajor,
+                ..Default::default()
+            };
+
+            test_matmul_algorithm::<Test, $eg, $es, TestRuntime>(
+                problem,
+                advanced_config,
+                &<<TestRuntime as Runtime>::Device>::default(),
+            );
+        }
+
+        #[test]
         pub fn bo1_gpc16x16x480_s1x1x3_t16x16x16_rr_ln4() {
             let problem = MatmulProblem {
                 m: 16,
@@ -71,6 +131,12 @@ macro_rules! matmul_test_define {
                 rhs_tiling_order: TilingOrderConfig::RowMajor,
                 ..Default::default()
             };
+
+            test_matmul_algorithm::<Test, $eg, $es, TestRuntime>(
+                problem,
+                advanced_config,
+                &<<TestRuntime as Runtime>::Device>::default(),
+            );
         }
 
         #[test]
