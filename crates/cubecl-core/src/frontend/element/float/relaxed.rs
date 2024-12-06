@@ -21,7 +21,7 @@ use crate::{
 use super::{
     init_expand_element, CubeContext, CubePrimitive, CubeType, ExpandElement,
     ExpandElementBaseInit, ExpandElementTyped, Float, Init, IntoRuntime, KernelBuilder,
-    KernelLauncher, LaunchArgExpand, Runtime, ScalarArgSettings, Vectorized,
+    KernelLauncher, LaunchArgExpand, Runtime, ScalarArgSettings, Lined,
 };
 
 /// A floating point type with relaxed precision, minimum [`f16`], max [`f32`].
@@ -182,12 +182,12 @@ impl Numeric for flex32 {
     const MIN: Self = flex32::from_f32(f32::MIN);
 }
 
-impl Vectorized for flex32 {
-    fn vectorization_factor(&self) -> u32 {
+impl Lined for flex32 {
+    fn line_size(&self) -> u32 {
         1
     }
 
-    fn vectorize(self, _factor: u32) -> Self {
+    fn to_line(self, _line_size: u32) -> Self {
         unexpanded!()
     }
 }
@@ -229,22 +229,22 @@ impl Float for flex32 {
         flex32::from_f32(val)
     }
 
-    fn vectorized(_val: f32, _vectorization: u32) -> Self {
+    fn lined(_val: f32, _line_size: u32) -> Self {
         unexpanded!()
     }
 
-    fn vectorized_empty(_vectorization: u32) -> Self {
+    fn lined_empty(_line_size: u32) -> Self {
         unexpanded!()
     }
 
-    fn __expand_vectorized_empty(
+    fn __expand_line_size_empty(
         context: &mut super::CubeContext,
-        vectorization: u32,
+        line_size: u32,
     ) -> <Self as super::CubeType>::ExpandType {
         context
-            .create_local_variable(Item::vectorized(
+            .create_local_variable(Item::lined(
                 Self::as_elem(),
-                NonZero::new(vectorization as u8),
+                NonZero::new(line_size as u8),
             ))
             .into()
     }

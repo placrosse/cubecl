@@ -216,8 +216,8 @@ macro_rules! impl_binary_func {
     }
 }
 
-macro_rules! impl_binary_func_fixed_output_vectorization {
-    ($trait_name:ident, $method_name:ident, $func_name_expand:ident, $method_name_expand:ident, $operator:expr, $out_vectorization: expr, $($type:ty),*) => {
+macro_rules! impl_binary_func_fixed_output_line_size {
+    ($trait_name:ident, $method_name:ident, $func_name_expand:ident, $method_name_expand:ident, $operator:expr, $out_line_size: expr, $($type:ty),*) => {
         pub trait $trait_name: CubeType + Sized {
             fn $method_name(self, _rhs: Self) -> Self {
                 unexpanded!()
@@ -230,7 +230,7 @@ macro_rules! impl_binary_func_fixed_output_vectorization {
             ) -> ExpandElementTyped<Self> {
                 let lhs: ExpandElement = lhs.into();
                 let mut item = lhs.item;
-                item.vectorization = $out_vectorization;
+                item.line_size = $out_line_size;
                 binary_expand_fixed_output(context, lhs, rhs.into(), item, $operator).into()
             }
         }
@@ -240,7 +240,7 @@ macro_rules! impl_binary_func_fixed_output_vectorization {
             pub fn $method_name_expand(self, context: &mut CubeContext, rhs: ExpandElementTyped<$type>) -> ExpandElementTyped<$type> {
                 let lhs: ExpandElement = self.into();
                 let mut item = lhs.item;
-                item.vectorization = $out_vectorization;
+                item.line_size = $out_line_size;
                 binary_expand_fixed_output(context, lhs, rhs.into(), item, $operator).into()
             }
         })*
@@ -323,7 +323,7 @@ impl_binary_func!(
     u32,
     u64
 );
-impl_binary_func_fixed_output_vectorization!(
+impl_binary_func_fixed_output_line_size!(
     Dot,
     dot,
     __expand_dot,

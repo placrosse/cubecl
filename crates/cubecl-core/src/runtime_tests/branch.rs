@@ -55,13 +55,13 @@ pub fn test_switch_statement<R: Runtime, F: Float + CubeElement>(
 ) {
     let handle = client.create(as_bytes![F: 0.0, 1.0]);
 
-    let vectorization = 2;
+    let line_size = 2;
 
     kernel_switch_simple::launch::<F, R>(
         &client,
         CubeCount::Static(1, 1, 1),
         CubeDim::default(),
-        unsafe { ArrayArg::from_raw_parts::<F>(&handle, 2, vectorization) },
+        unsafe { ArrayArg::from_raw_parts::<F>(&handle, 2, line_size) },
         ScalarArg::new(0),
     );
 
@@ -76,13 +76,13 @@ pub fn test_switch_used_as_value<R: Runtime, F: Float + CubeElement>(
 ) {
     let handle = client.create(as_bytes![F: 0.0, 1.0]);
 
-    let vectorization = 2;
+    let line_size = 2;
 
     kernel_switch_value_expr::launch::<F, R>(
         &client,
         CubeCount::Static(1, 1, 1),
         CubeDim::default(),
-        unsafe { ArrayArg::from_raw_parts::<F>(&handle, 2, vectorization) },
+        unsafe { ArrayArg::from_raw_parts::<F>(&handle, 2, line_size) },
         ScalarArg::new(1),
     );
 
@@ -97,13 +97,13 @@ pub fn test_switch_default<R: Runtime, F: Float + CubeElement>(
 ) {
     let handle = client.create(as_bytes![F: 0.0, 1.0]);
 
-    let vectorization = 2;
+    let line_size = 2;
 
     kernel_switch_value_expr::launch::<F, R>(
         &client,
         CubeCount::Static(1, 1, 1),
         CubeDim::default(),
-        unsafe { ArrayArg::from_raw_parts::<F>(&handle, 2, vectorization) },
+        unsafe { ArrayArg::from_raw_parts::<F>(&handle, 2, line_size) },
         ScalarArg::new(5),
     );
 
@@ -118,13 +118,13 @@ pub fn test_switch_or_branch<R: Runtime, F: Float + CubeElement>(
 ) {
     let handle = client.create(as_bytes![F: 0.0, 1.0]);
 
-    let vectorization = 2;
+    let line_size = 2;
 
     kernel_switch_or_arm::launch::<F, R>(
         &client,
         CubeCount::Static(1, 1, 1),
         CubeDim::default(),
-        unsafe { ArrayArg::from_raw_parts::<F>(&handle, 2, vectorization) },
+        unsafe { ArrayArg::from_raw_parts::<F>(&handle, 2, line_size) },
         ScalarArg::new(2),
     );
 
@@ -140,7 +140,7 @@ pub fn test_select<R: Runtime, F: Float + CubeElement>(
 ) {
     let handle = client.create(as_bytes![F: 0.0]);
 
-    let vectorization = 1;
+    let line_size = 1;
 
     let cond_u32 = if cond { 1 } else { 0 };
 
@@ -148,7 +148,7 @@ pub fn test_select<R: Runtime, F: Float + CubeElement>(
         &client,
         CubeCount::Static(1, 1, 1),
         CubeDim::default(),
-        unsafe { ArrayArg::from_raw_parts::<F>(&handle, 1, vectorization) },
+        unsafe { ArrayArg::from_raw_parts::<F>(&handle, 1, line_size) },
         ScalarArg::new(cond_u32),
     );
 

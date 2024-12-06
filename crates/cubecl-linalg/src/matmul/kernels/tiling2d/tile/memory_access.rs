@@ -131,7 +131,7 @@ impl<F: Float> ContiguousAccess<F> for UnmatchingVectorization {
     ) -> Line<F> {
         let tile_size = config.tile_size;
         let unroll = config.unroll_tile;
-        let vectorization_factor = vectorization_of(tensor);
+        let vectorization_factor = line_size_of(tensor);
         let is_scalar = vectorization_factor == 1;
 
         let mut vector = Line::empty(tile_size).fill(F::new(0.0));
@@ -162,7 +162,7 @@ impl<F: Float> ContiguousAccess<F> for UnmatchingVectorization {
     ) -> Line<F> {
         let tile_size = config.tile_size;
         let unroll = config.unroll_tile;
-        let vectorization_factor = vectorization_of(tensor);
+        let vectorization_factor = line_size_of(tensor);
         let is_scalar = vectorization_factor == 1;
 
         let mut vector = Line::empty(tile_size).fill(F::new(0.));
@@ -197,7 +197,7 @@ impl<F: Float> ContiguousAccess<F> for UnmatchingVectorization {
     ) {
         let tile_size = config.tile_size;
         let unroll = config.unroll_tile;
-        let vectorization_factor = vectorization_of(out);
+        let vectorization_factor = line_size_of(out);
         let is_scalar = vectorization_factor == 1;
 
         #[unroll(unroll)]
@@ -227,7 +227,7 @@ impl<F: Float> ContiguousAccess<F> for UnmatchingVectorization {
         #[comptime] config: CubeTiling2dConfig,
     ) {
         let tile_size = config.tile_size;
-        let vectorization_factor = vectorization_of(out);
+        let vectorization_factor = line_size_of(out);
         let is_scalar = vectorization_factor == 1;
 
         let mut num_loops = 0;

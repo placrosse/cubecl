@@ -406,7 +406,7 @@ impl<T: SpirvTarget> SpirvCompiler<T> {
             }
             core::Elem::Bool => Elem::Bool,
         };
-        let vectorization = item.vectorization.map(|it| it.get()).unwrap_or(1);
+        let vectorization = item.line_size.map(|it| it.get()).unwrap_or(1);
         if vectorization == 1 {
             Item::Scalar(elem)
         } else {

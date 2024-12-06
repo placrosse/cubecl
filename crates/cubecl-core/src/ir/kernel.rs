@@ -237,10 +237,10 @@ impl Display for Elem {
 #[derive(Debug, Clone, PartialEq, Eq, Copy, Serialize, Deserialize, Hash, PartialOrd, Ord)]
 pub struct Item {
     pub elem: Elem,
-    pub vectorization: Vectorization,
+    pub line_size: LineSize,
 }
 
-pub type Vectorization = Option<NonZero<u8>>;
+pub type LineSize = Option<NonZero<u8>>;
 
 impl Item {}
 
@@ -250,35 +250,32 @@ impl Item {
         self.elem
     }
 
-    /// Create a new item without vectorization
+    /// Create a new non-lined item.
     pub fn new(elem: Elem) -> Self {
         Self {
             elem,
-            vectorization: None,
+            line_size: None,
         }
     }
 
-    /// Create a new item with vectorization
-    pub fn vectorized(elem: Elem, vectorization: Vectorization) -> Self {
-        Self {
-            elem,
-            vectorization,
-        }
+    /// Create a new item with the given line_size.
+    pub fn lined(elem: Elem, line_size: LineSize) -> Self {
+        Self { elem, line_size }
     }
 
-    pub(crate) fn vectorize(&self, vectorization: Vectorization) -> Item {
+    pub(crate) fn to_line(&self, line_size: LineSize) -> Item {
         Item {
             elem: self.elem,
-            vectorization,
+            line_size,
         }
     }
 }
 
 impl Display for Item {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.vectorization {
+        match self.line_size {
             Some(vec) if vec.get() > 1 => {
-                write!(f, "vector{}<{}>", vec.get(), self.elem)
+                write!(f, "line{}<{}>", vec.get(), self.elem)
             }
             _ => write!(f, "{}", self.elem),
         }

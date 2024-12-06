@@ -1,4 +1,4 @@
-use super::{flex32, CubePrimitive, Numeric, Vectorized};
+use super::{flex32, CubePrimitive, Lined, Numeric};
 use crate::tf32;
 use crate::{
     ir::{ConstantScalarValue, Elem, Item, Operation, Variable, VariableKind},
@@ -250,32 +250,32 @@ impl<T: ExpandElementBaseInit> Init for ExpandElementTyped<T> {
     }
 }
 
-impl<T: CubeType> Vectorized for ExpandElementTyped<T> {
-    fn vectorization_factor(&self) -> u32 {
-        self.expand.vectorization_factor()
+impl<T: CubeType> Lined for ExpandElementTyped<T> {
+    fn line_size(&self) -> u32 {
+        self.expand.line_size()
     }
 
-    fn vectorize(self, factor: u32) -> Self {
+    fn to_line(self, line_size: u32) -> Self {
         Self {
-            expand: self.expand.vectorize(factor),
+            expand: self.expand.to_line(line_size),
             _type: PhantomData,
         }
     }
 }
 
 impl<T: CubeType> ExpandElementTyped<T> {
-    // Expanded version of vectorization factor.
-    pub fn __expand_vectorization_factor_method(self, _context: &mut CubeContext) -> u32 {
+    // Expanded version of line size.
+    pub fn __expand_line_size_method(self, _context: &mut CubeContext) -> u32 {
         self.expand
             .item
-            .vectorization
+            .line_size
             .map(|it| it.get())
             .unwrap_or(1) as u32
     }
 
-    pub fn __expand_vectorize_method(self, _context: &mut CubeContext, factor: u32) -> Self {
+    pub fn __expand_to_line_method(self, _context: &mut CubeContext, line_size: u32) -> Self {
         Self {
-            expand: self.expand.vectorize(factor),
+            expand: self.expand.to_line(line_size),
             _type: PhantomData,
         }
     }
@@ -432,15 +432,15 @@ pub(crate) fn __expand_new<C: Numeric, Out: Numeric>(
     val.into()
 }
 
-/// Create a vectorized constant element of the correct type during expansion.
-pub(crate) fn __expand_vectorized<C: Numeric + CubeIndex<u32>, Out: Numeric>(
+/// Create a lined constant element of the correct type during expansion.
+pub(crate) fn __expand_lined<C: Numeric + CubeIndex<u32>, Out: Numeric>(
     context: &mut CubeContext,
     val: C,
-    vectorization: u32,
+    line_size: u32,
     elem: Elem,
 ) -> ExpandElementTyped<Out> {
     let new_var =
-        context.create_local_binding(Item::vectorized(elem, NonZero::new(vectorization as u8)));
+        context.create_local_binding(Item::lined(elem, NonZero::new(line_size as u8)));
     let val = Out::from(val).unwrap();
     let val: ExpandElementTyped<Out> = val.into();
 

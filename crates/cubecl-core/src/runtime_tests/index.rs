@@ -22,13 +22,13 @@ pub fn test_kernel_index_scalar<R: Runtime, F: Float + CubeElement>(
 ) {
     let handle = client.create(F::as_bytes(&[F::new(0.0), F::new(1.0), F::new(123.0)]));
     let handle_slice = handle.clone().offset_end(1);
-    let vectorization = 1;
+    let line_size = 1;
 
     kernel_assign::launch::<F, R>(
         &client,
         CubeCount::Static(1, 1, 1),
         CubeDim::default(),
-        unsafe { ArrayArg::from_raw_parts::<F>(&handle_slice, 3, vectorization) },
+        unsafe { ArrayArg::from_raw_parts::<F>(&handle_slice, 3, line_size) },
     );
 
     let actual = client.read_one(handle.binding());

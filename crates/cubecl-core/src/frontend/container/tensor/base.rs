@@ -42,23 +42,23 @@ mod metadata {
             unexpanded!()
         }
 
-        /// The number of vectorized elements in the tensor.
+        /// The number of line_size elements in the tensor.
         ///
         /// # Warning
         ///
-        /// The length will be affected by the vectorization factor. To obtain the number of elements,
-        /// you should multiply the length by the vectorization factor.
+        /// The length will be affected by the line size. To obtain the number of elements,
+        /// you should multiply the length by the line size.
         #[allow(clippy::len_without_is_empty)]
         pub fn len(&self) -> u32 {
             unexpanded!()
         }
 
-        /// The length of the buffer representing the tensor in terms of vectorized elements.
+        /// The length of the buffer representing the tensor in terms of line_size elements.
         ///
         /// # Warning
         ///
-        /// The buffer length will be affected by the vectorization factor. To obtain the number of
-        /// elements, you should multiply the length by the vectorization factor.
+        /// The buffer length will be affected by the line size. To obtain the number of
+        /// elements, you should multiply the length by the line size.
         #[allow(clippy::len_without_is_empty)]
         pub fn buffer_len(&self) -> u32 {
             unexpanded!()
@@ -311,21 +311,22 @@ mod line {
         }
     }
 
-    impl<P: CubePrimitive> ExpandElementTyped<Tensor<Line<P>>> {
-        /// Comptime version of [size](Tensor::line_size).
-        pub fn line_size(&self) -> u32 {
-            self.expand
-                .item
-                .vectorization
-                .unwrap_or(NonZero::new(1).unwrap())
-                .get() as u32
-        }
+    // TODO Clean
+    // impl<P: CubePrimitive> ExpandElementTyped<Tensor<Line<P>>> {
+    //     /// Comptime version of [size](Tensor::line_size).
+    //     pub fn line_size(&self) -> u32 {
+    //         self.expand
+    //             .item
+    //             .line_size
+    //             .unwrap_or(NonZero::new(1).unwrap())
+    //             .get() as u32
+    //     }
 
-        // Expand method of [size](Tensor::line_size).
-        pub fn __expand_line_size_method(&self, _content: &mut CubeContext) -> u32 {
-            self.line_size()
-        }
-    }
+    //     // Expand method of [size](Tensor::line_size).
+    //     pub fn __expand_line_size_method(&self, _content: &mut CubeContext) -> u32 {
+    //         self.line_size()
+    //     }
+    // }
 }
 
 impl<T: CubeType<ExpandType = ExpandElementTyped<T>>> SizedContainer for Tensor<T> {

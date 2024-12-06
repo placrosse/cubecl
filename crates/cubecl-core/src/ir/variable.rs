@@ -365,8 +365,8 @@ impl Display for ConstantScalarValue {
 }
 
 impl Variable {
-    pub fn vectorization_factor(&self) -> u8 {
-        self.item.vectorization.map(NonZero::get).unwrap_or(1u8)
+    pub fn line_size(&self) -> u8 {
+        self.item.line_size.map(NonZero::get).unwrap_or(1u8)
     }
     pub fn index(&self) -> Option<u16> {
         match self.kind {

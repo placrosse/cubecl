@@ -17,7 +17,7 @@ impl<F: Float, FC: Float> BlockLoader<F, FC> for WholeCheckBlockIO {
         write_pos: u32,
         runtime_info: RuntimeCmmaInfo,
     ) {
-        let tensor_vec = vectorization_of(tensor);
+        let tensor_vec = line_size_of(tensor);
         let is_scalar = tensor_vec == 1;
         let dim_horizontal = I::dim_horizontal(runtime_info);
 
@@ -54,7 +54,7 @@ impl<F: Float> BlockWriter<F> for WholeCheckBlockIO {
         write_col: u32,
         dims: Dimensions,
     ) {
-        let out_vec = vectorization_of(out);
+        let out_vec = line_size_of(out);
         let is_scalar = out_vec == 1;
 
         if write_row < dims.m && write_col < dims.n {
@@ -64,7 +64,7 @@ impl<F: Float> BlockWriter<F> for WholeCheckBlockIO {
                 let val = accumulator_sm[read_position];
                 out[write_position / out_vec] = val;
             } else {
-                let mut value = F::vectorized_empty(out_vec);
+                let mut value = F::lined_empty(out_vec);
 
                 #[unroll]
                 for i in 0..out_vec {

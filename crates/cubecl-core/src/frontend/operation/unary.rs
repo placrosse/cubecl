@@ -51,8 +51,8 @@ macro_rules! impl_unary_func {
     }
 }
 
-macro_rules! impl_unary_func_fixed_out_vectorization {
-    ($trait_name:ident, $method_name:ident, $method_name_expand:ident, $operator:expr, $out_vectorization: expr, $($type:ty),*) => {
+macro_rules! impl_unary_func_fixed_out_line_size {
+    ($trait_name:ident, $method_name:ident, $method_name_expand:ident, $operator:expr, $out_line_size: expr, $($type:ty),*) => {
         pub trait $trait_name: CubePrimitive + Sized {
             #[allow(unused_variables)]
             fn $method_name(x: Self) -> Self {
@@ -62,7 +62,7 @@ macro_rules! impl_unary_func_fixed_out_vectorization {
             fn $method_name_expand(context: &mut CubeContext, x: Self::ExpandType) -> ExpandElementTyped<Self> {
                 let expand_element: ExpandElement = x.into();
                 let mut item = expand_element.item;
-                item.vectorization = $out_vectorization;
+                item.line_size = $out_line_size;
                 unary_expand_fixed_output(context, expand_element, item, $operator).into()
             }
         }
@@ -235,7 +235,7 @@ impl_unary_func!(
     f32,
     f64
 );
-impl_unary_func_fixed_out_vectorization!(
+impl_unary_func_fixed_out_line_size!(
     Magnitude,
     magnitude,
     __expand_magnitude,

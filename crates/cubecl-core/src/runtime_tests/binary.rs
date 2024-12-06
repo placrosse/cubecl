@@ -51,8 +51,8 @@ macro_rules! test_binary_impl {
         $float_type:ident,
         $binary_func:expr,
         [$({
-            input_vectorization: $input_vectorization:expr,
-            out_vectorization: $out_vectorization:expr,
+            input_line_size: $input_line_size:expr,
+            out_line_size: $out_line_size:expr,
             lhs: $lhs:expr,
             rhs: $rhs:expr,
             expected: $expected:expr
@@ -77,10 +77,10 @@ macro_rules! test_binary_impl {
                     test_function::launch_unchecked::<$float_type, R>(
                         &client,
                         CubeCount::Static(1, 1, 1),
-                        CubeDim::new((lhs.len() / $input_vectorization as usize) as u32, 1, 1),
-                        ArrayArg::from_raw_parts::<$float_type>(&lhs_handle, lhs.len(), $input_vectorization),
-                        ArrayArg::from_raw_parts::<$float_type>(&rhs_handle, rhs.len(), $input_vectorization),
-                        ArrayArg::from_raw_parts::<$float_type>(&output_handle, $expected.len(), $out_vectorization),
+                        CubeDim::new((lhs.len() / $input_line_size as usize) as u32, 1, 1),
+                        ArrayArg::from_raw_parts::<$float_type>(&lhs_handle, lhs.len(), $input_line_size),
+                        ArrayArg::from_raw_parts::<$float_type>(&rhs_handle, rhs.len(), $input_line_size),
+                        ArrayArg::from_raw_parts::<$float_type>(&output_handle, $expected.len(), $out_line_size),
                     )
                 };
 
@@ -97,29 +97,29 @@ test_binary_impl!(
     F::dot,
     [
         {
-            input_vectorization: 1,
-            out_vectorization: 1,
+            input_line_size: 1,
+            out_line_size: 1,
             lhs: as_type![F: 1., -3.1, -2.4, 15.1],
             rhs: as_type![F: -1., 23.1, -1.4, 5.1],
             expected: as_type![F: -1.0, -71.61, 3.36, 77.01]
         },
         {
-            input_vectorization: 2,
-            out_vectorization: 1,
+            input_line_size: 2,
+            out_line_size: 1,
             lhs: as_type![F: 1., -3.1, -2.4, 15.1],
             rhs: as_type![F: -1., 23.1, -1.4, 5.1],
             expected: as_type![F: -72.61, 80.37]
         },
         {
-            input_vectorization: 4,
-            out_vectorization: 1,
+            input_line_size: 4,
+            out_line_size: 1,
             lhs: as_type![F: 1., -3.1, -2.4, 15.1],
             rhs: as_type![F: -1., 23.1, -1.4, 5.1],
             expected: as_type![F: 7.76]
         },
         {
-            input_vectorization: 4,
-            out_vectorization: 1,
+            input_line_size: 4,
+            out_line_size: 1,
             lhs: as_type![F: 1., -3.1, -2.4, 15.1, -1., 23.1, -1.4, 5.1],
             rhs: as_type![F: -1., 23.1, -1.4, 5.1, 1., -3.1, -2.4, 15.1],
             expected: as_type![F: 7.76, 7.76]

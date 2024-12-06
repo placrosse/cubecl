@@ -30,7 +30,7 @@ fn matmul_kernel<F: Float>(
         return;
     }
 
-    let vectorization_factor = vectorization_of(lhs);
+    let vectorization_factor = line_size_of(lhs);
 
     let mut offset_lhs = 0;
     let mut offset_rhs = 0;
@@ -47,7 +47,7 @@ fn matmul_kernel<F: Float>(
     offset_lhs /= vectorization_factor;
     offset_rhs /= vectorization_factor;
 
-    let mut sum = F::vectorized(0., vectorization_factor);
+    let mut sum = F::lined(0., vectorization_factor);
 
     k /= vectorization_factor;
 

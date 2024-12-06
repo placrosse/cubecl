@@ -3,7 +3,7 @@ pub use crate::{cube, CubeLaunch, CubeType, Kernel, RuntimeArg};
 pub use crate::codegen::{KernelExpansion, KernelIntegrator, KernelSettings};
 pub use crate::compute::{CompiledKernel, CubeTask, KernelBuilder, KernelLauncher, KernelTask};
 pub use crate::frontend::cmma;
-pub use crate::frontend::{branch::*, synchronization::*, vectorization_of};
+pub use crate::frontend::{branch::*, synchronization::*, line_size_of};
 pub use crate::ir::{CubeDim, KernelDefinition};
 pub use crate::runtime::Runtime;
 

@@ -10,8 +10,8 @@ use crate::{
 };
 
 use super::{
-    init_expand_element, Init, IntoRuntime, LaunchArgExpand, ScalarArgSettings, Vectorized,
-    __expand_new, __expand_vectorized,
+    init_expand_element, Init, IntoRuntime, LaunchArgExpand, ScalarArgSettings, Lined,
+    __expand_new, __expand_lined,
 };
 
 /// Signed or unsigned integer. Used as input in int kernels
@@ -43,16 +43,16 @@ pub trait Int:
     const BITS: u32;
 
     fn new(val: i64) -> Self;
-    fn vectorized(val: i64, vectorization: u32) -> Self;
+    fn lined(val: i64, line_size: u32) -> Self;
     fn __expand_new(context: &mut CubeContext, val: i64) -> <Self as CubeType>::ExpandType {
         __expand_new(context, val)
     }
-    fn __expand_vectorized(
+    fn __expand_lined(
         context: &mut CubeContext,
         val: i64,
-        vectorization: u32,
+        line_size: u32,
     ) -> <Self as CubeType>::ExpandType {
-        __expand_vectorized(context, val, vectorization, Self::as_elem())
+        __expand_lined(context, val, line_size, Self::as_elem())
     }
 }
 
@@ -83,12 +83,12 @@ macro_rules! impl_int {
             const MIN: Self = $type::MIN;
         }
 
-        impl Vectorized for $type {
-            fn vectorization_factor(&self) -> u32 {
+        impl Lined for $type {
+            fn line_size(&self) -> u32 {
                 1
             }
 
-            fn vectorize(self, _factor: u32) -> Self {
+            fn to_line(self, _line_size: u32) -> Self {
                 unexpanded!()
             }
         }
@@ -106,7 +106,7 @@ macro_rules! impl_int {
                 val as $type
             }
 
-            fn vectorized(val: i64, _vectorization: u32) -> Self {
+            fn lined(val: i64, _line_size: u32) -> Self {
                 Self::new(val)
             }
         }

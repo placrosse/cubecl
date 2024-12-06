@@ -48,20 +48,20 @@ fn test_kernel_different_rank<R: Runtime, F: Float + CubeElement>(
     (shape_lhs, shape_rhs, shape_out): (Vec<usize>, Vec<usize>, Vec<usize>),
     (strides_lhs, strides_rhs, strides_out): (Vec<usize>, Vec<usize>, Vec<usize>),
 ) {
-    let vectorisation = 2;
+    let line_size = 2;
 
     let handle_lhs = client.create(as_bytes![F: 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]);
     let handle_rhs = client.create(as_bytes![F: 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]);
     let handle_out = client.create(as_bytes![F: 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
 
     let lhs = unsafe {
-        TensorArg::from_raw_parts::<F>(&handle_lhs, &strides_lhs, &shape_lhs, vectorisation)
+        TensorArg::from_raw_parts::<F>(&handle_lhs, &strides_lhs, &shape_lhs, line_size)
     };
     let rhs = unsafe {
-        TensorArg::from_raw_parts::<F>(&handle_rhs, &strides_rhs, &shape_rhs, vectorisation)
+        TensorArg::from_raw_parts::<F>(&handle_rhs, &strides_rhs, &shape_rhs, line_size)
     };
     let out = unsafe {
-        TensorArg::from_raw_parts::<F>(&handle_out, &strides_out, &shape_out, vectorisation)
+        TensorArg::from_raw_parts::<F>(&handle_out, &strides_out, &shape_out, line_size)
     };
 
     kernel_different_rank::launch::<F, R>(

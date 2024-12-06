@@ -17,7 +17,7 @@ use crate::{
 use super::{
     init_expand_element, CubeContext, CubePrimitive, CubeType, ExpandElement,
     ExpandElementBaseInit, ExpandElementTyped, Float, Init, IntoRuntime, KernelBuilder,
-    KernelLauncher, LaunchArgExpand, Runtime, ScalarArgSettings, Vectorized,
+    KernelLauncher, LaunchArgExpand, Runtime, ScalarArgSettings, Lined,
 };
 
 /// A 19-bit floating point type implementing the [`tfloat32`] format.
@@ -192,12 +192,12 @@ impl Numeric for tf32 {
     const MIN: Self = tf32::from_f32(f32::MIN);
 }
 
-impl Vectorized for tf32 {
-    fn vectorization_factor(&self) -> u32 {
+impl Lined for tf32 {
+    fn line_size(&self) -> u32 {
         1
     }
 
-    fn vectorize(self, _factor: u32) -> Self {
+    fn to_line(self, _line_size: u32) -> Self {
         unexpanded!()
     }
 }
@@ -240,22 +240,22 @@ impl Float for tf32 {
         tf32(val)
     }
 
-    fn vectorized(_val: f32, _vectorization: u32) -> Self {
+    fn lined(_val: f32, _line_size: u32) -> Self {
         unexpanded!()
     }
 
-    fn vectorized_empty(_vectorization: u32) -> Self {
+    fn lined_empty(_line_size: u32) -> Self {
         unexpanded!()
     }
 
-    fn __expand_vectorized_empty(
+    fn __expand_line_size_empty(
         context: &mut super::CubeContext,
-        vectorization: u32,
+        line_size: u32,
     ) -> <Self as super::CubeType>::ExpandType {
         context
-            .create_local_variable(Item::vectorized(
+            .create_local_variable(Item::lined(
                 Self::as_elem(),
-                NonZero::new(vectorization as u8),
+                NonZero::new(line_size as u8),
             ))
             .into()
     }

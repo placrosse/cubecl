@@ -17,7 +17,7 @@ use crate::{
 
 use super::{
     ArgSettings, ExpandElement, ExpandElementBaseInit, ExpandElementTyped, LaunchArg,
-    LaunchArgExpand, Vectorized,
+    LaunchArgExpand, Lined,
 };
 
 /// Type that encompasses both (unsigned or signed) integers and floats
@@ -29,7 +29,7 @@ pub trait Numeric:
     + Min
     + Clamp
     + Remainder
-    + Vectorized
+    + Lined
     + CubePrimitive
     + LaunchArgExpand<CompilationArg = ()>
     + ScalarArgSettings
@@ -82,7 +82,7 @@ pub trait Numeric:
         context: &mut CubeContext,
         vec: [u32; D],
     ) -> <Self as CubeType>::ExpandType {
-        let new_var = context.create_local_binding(Item::vectorized(
+        let new_var = context.create_local_binding(Item::lined(
             Self::as_elem(),
             NonZero::new(vec.len() as u8),
         ));

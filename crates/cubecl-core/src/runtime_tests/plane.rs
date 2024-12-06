@@ -81,17 +81,17 @@ pub fn test_plane_sum<
     F: Float + num_traits::Float + CubeElement + Display,
 >(
     client: ComputeClient<TestRuntime::Server, TestRuntime::Channel>,
-    vectorization: u8,
+    line_size: u8,
 ) {
     let plane_size = 32;
-    let input: Vec<f32> = (0..plane_size * vectorization as u32)
+    let input: Vec<f32> = (0..plane_size * line_size as u32)
         .map(|x| x as f32)
         .collect();
     let mut expected = input.clone();
 
     for k in 1..plane_size as usize {
-        for v in 0..vectorization as usize {
-            expected[v] += input[v + k * vectorization as usize];
+        for v in 0..line_size as usize {
+            expected[v] += input[v + k * line_size as usize];
         }
     }
     let input: Vec<F> = input.into_iter().map(|x| F::new(x)).collect();
@@ -100,7 +100,7 @@ pub fn test_plane_sum<
     test_plane_operation::<TestRuntime, F, _>(
         &input,
         &expected,
-        vectorization,
+        line_size,
         client.clone(),
         |cube_count, handle| {
             kernel_sum::launch::<F, TestRuntime>(
@@ -118,10 +118,10 @@ pub fn test_plane_prod<
     F: Float + num_traits::Float + CubeElement + Display,
 >(
     client: ComputeClient<TestRuntime::Server, TestRuntime::Channel>,
-    vectorization: u8,
+    line_size: u8,
 ) {
     let plane_size = 32;
-    let input: Vec<f32> = (0..plane_size * vectorization as u32)
+    let input: Vec<f32> = (0..plane_size * line_size as u32)
         .map(|x| match x % 3 {
             0 => 0.5,
             1 => 1.25,
@@ -132,8 +132,8 @@ pub fn test_plane_prod<
     let mut expected = input.clone();
 
     for k in 1..plane_size as usize {
-        for v in 0..vectorization as usize {
-            expected[v] *= input[v + k * vectorization as usize];
+        for v in 0..line_size as usize {
+            expected[v] *= input[v + k * line_size as usize];
         }
     }
     let input: Vec<F> = input.into_iter().map(|x| F::new(x)).collect();
@@ -142,7 +142,7 @@ pub fn test_plane_prod<
     test_plane_operation::<TestRuntime, F, _>(
         &input,
         &expected,
-        vectorization,
+        line_size,
         client.clone(),
         |cube_count, handle| {
             kernel_prod::launch::<F, TestRuntime>(
@@ -160,10 +160,10 @@ pub fn test_plane_max<
     F: Float + num_traits::Float + CubeElement + Display,
 >(
     client: ComputeClient<TestRuntime::Server, TestRuntime::Channel>,
-    vectorization: u8,
+    line_size: u8,
 ) {
     let plane_size = 32;
-    let mut input: Vec<f32> = (0..plane_size * vectorization as u32)
+    let mut input: Vec<f32> = (0..plane_size * line_size as u32)
         .map(|x| x as f32)
         .collect();
     input[16] = 999.0; // I don't want the max to always be the last element.
@@ -171,8 +171,8 @@ pub fn test_plane_max<
     let mut expected = input.clone();
 
     for k in 1..plane_size as usize {
-        for v in 0..vectorization as usize {
-            expected[v] = expected[v].max(input[v + k * vectorization as usize]);
+        for v in 0..line_size as usize {
+            expected[v] = expected[v].max(input[v + k * line_size as usize]);
         }
     }
     let input: Vec<F> = input.into_iter().map(|x| F::new(x)).collect();
@@ -181,7 +181,7 @@ pub fn test_plane_max<
     test_plane_operation::<TestRuntime, F, _>(
         &input,
         &expected,
-        vectorization,
+        line_size,
         client.clone(),
         |cube_count, handle| {
             kernel_max::launch::<F, TestRuntime>(
@@ -199,10 +199,10 @@ pub fn test_plane_min<
     F: Float + num_traits::Float + CubeElement + Display,
 >(
     client: ComputeClient<TestRuntime::Server, TestRuntime::Channel>,
-    vectorization: u8,
+    line_size: u8,
 ) {
     let plane_size = 32;
-    let mut input: Vec<f32> = (0..plane_size * vectorization as u32)
+    let mut input: Vec<f32> = (0..plane_size * line_size as u32)
         .map(|x| x as f32)
         .collect();
     input[16] = -5.0; // I don't want the min to always be the first element.
@@ -210,8 +210,8 @@ pub fn test_plane_min<
     let mut expected = input.clone();
 
     for k in 1..plane_size as usize {
-        for v in 0..vectorization as usize {
-            expected[v] = expected[v].min(input[v + k * vectorization as usize]);
+        for v in 0..line_size as usize {
+            expected[v] = expected[v].min(input[v + k * line_size as usize]);
         }
     }
     let input: Vec<F> = input.into_iter().map(|x| F::new(x)).collect();
@@ -220,7 +220,7 @@ pub fn test_plane_min<
     test_plane_operation::<TestRuntime, F, _>(
         &input,
         &expected,
-        vectorization,
+        line_size,
         client.clone(),
         |cube_count, handle| {
             kernel_min::launch::<F, TestRuntime>(
@@ -238,21 +238,21 @@ pub fn test_plane_all<
     F: Float + num_traits::Float + CubeElement + Display,
 >(
     client: ComputeClient<TestRuntime::Server, TestRuntime::Channel>,
-    vectorization: u8,
+    line_size: u8,
 ) {
     let plane_size = 32;
-    let mut input: Vec<f32> = (0..plane_size * vectorization as u32)
+    let mut input: Vec<f32> = (0..plane_size * line_size as u32)
         .map(|x| (x % 5) as f32) // the predicate is x < 5 which is always satisfied at this step.
         .collect();
 
-    for k in 0..vectorization as usize {
+    for k in 0..line_size as usize {
         if k % 2 == 0 {
-            input[4 * vectorization as usize + k] = 10.0; // Make all even batches false by setting an element to be > 5.
+            input[4 * line_size as usize + k] = 10.0; // Make all even batches false by setting an element to be > 5.
         }
     }
 
     let expected: Vec<f32> = (0..input.len())
-        .map(|x| ((x % vectorization as usize) % 2) as f32)
+        .map(|x| ((x % line_size as usize) % 2) as f32)
         .collect();
 
     let input: Vec<F> = input.into_iter().map(|x| F::new(x)).collect();
@@ -261,7 +261,7 @@ pub fn test_plane_all<
     test_plane_operation::<TestRuntime, F, _>(
         &input,
         &expected,
-        vectorization,
+        line_size,
         client.clone(),
         |cube_count, handle| {
             kernel_all::launch::<F, TestRuntime>(
@@ -279,21 +279,21 @@ pub fn test_plane_any<
     F: Float + num_traits::Float + CubeElement + Display,
 >(
     client: ComputeClient<TestRuntime::Server, TestRuntime::Channel>,
-    vectorization: u8,
+    line_size: u8,
 ) {
     let plane_size = 32;
-    let mut input: Vec<f32> = (0..plane_size * vectorization as u32)
+    let mut input: Vec<f32> = (0..plane_size * line_size as u32)
         .map(|x| (x % 5) as f32) // the predicate is x > 5 which is never satisfied at this step.
         .collect();
 
-    for k in 0..vectorization as usize {
+    for k in 0..line_size as usize {
         if k % 2 == 0 {
-            input[4 * vectorization as usize + k] = 10.0; // Make all even batches true by setting an element to be > 5.
+            input[4 * line_size as usize + k] = 10.0; // Make all even batches true by setting an element to be > 5.
         }
     }
 
     let expected: Vec<f32> = (0..input.len())
-        .map(|x| (1 - (x % vectorization as usize) % 2) as f32)
+        .map(|x| (1 - (x % line_size as usize) % 2) as f32)
         .collect();
 
     let input: Vec<F> = input.into_iter().map(|x| F::new(x)).collect();
@@ -302,7 +302,7 @@ pub fn test_plane_any<
     test_plane_operation::<TestRuntime, F, _>(
         &input,
         &expected,
-        vectorization,
+        line_size,
         client.clone(),
         |cube_count, handle| {
             kernel_any::launch::<F, TestRuntime>(
@@ -320,13 +320,13 @@ pub fn test_plane_elect<
     F: Float + num_traits::Float + CubeElement + Display,
 >(
     client: ComputeClient<TestRuntime::Server, TestRuntime::Channel>,
-    vectorization: u8,
+    line_size: u8,
 ) {
     let plane_size = 32;
-    let input = vec![0.0; plane_size as usize * vectorization as usize];
+    let input = vec![0.0; plane_size as usize * line_size as usize];
 
     let mut expected = input.clone();
-    expected[20] = vectorization as f32;
+    expected[20] = line_size as f32;
 
     let input: Vec<F> = input.into_iter().map(|x| F::new(x)).collect();
     let expected: Vec<F> = expected.into_iter().map(|x| F::new(x)).collect();
@@ -334,7 +334,7 @@ pub fn test_plane_elect<
     test_plane_operation::<TestRuntime, F, _>(
         &input,
         &expected,
-        vectorization,
+        line_size,
         client.clone(),
         |cube_count, handle| {
             kernel_any::launch::<F, TestRuntime>(
@@ -352,16 +352,16 @@ pub fn test_plane_broadcast<
     F: Float + num_traits::Float + CubeElement + Display,
 >(
     client: ComputeClient<TestRuntime::Server, TestRuntime::Channel>,
-    vectorization: u8,
+    line_size: u8,
 ) {
     let plane_size = 32;
-    let input: Vec<f32> = (0..plane_size * vectorization as u32)
+    let input: Vec<f32> = (0..plane_size * line_size as u32)
         .map(|x| x as f32)
         .collect();
     let mut expected = input.clone();
 
-    for v in 0..vectorization as usize {
-        expected[v] = input[v + 2 * vectorization as usize];
+    for v in 0..line_size as usize {
+        expected[v] = input[v + 2 * line_size as usize];
     }
     let input: Vec<F> = input.into_iter().map(|x| F::new(x)).collect();
     let expected: Vec<F> = expected.into_iter().map(|x| F::new(x)).collect();
@@ -369,7 +369,7 @@ pub fn test_plane_broadcast<
     test_plane_operation::<TestRuntime, F, _>(
         &input,
         &expected,
-        vectorization,
+        line_size,
         client.clone(),
         |cube_count, handle| {
             kernel_broadcast::launch::<F, TestRuntime>(
@@ -389,7 +389,7 @@ fn test_plane_operation<
 >(
     input: &[F],
     expected: &[F],
-    vectorization: u8,
+    line_size: u8,
     client: ComputeClient<TestRuntime::Server, TestRuntime::Channel>,
     launch: Launch,
 ) where
@@ -406,7 +406,7 @@ fn test_plane_operation<
     unsafe {
         launch(
             CubeCount::Static(1, 1, 1),
-            TensorArg::from_raw_parts::<F>(&handle, &strides, &shape, vectorization),
+            TensorArg::from_raw_parts::<F>(&handle, &strides, &shape, line_size),
         );
     }
 
@@ -419,11 +419,11 @@ macro_rules! testgen_plane {
     () => {
         use super::*;
 
-        fn impl_test_plane_sum(vectorization: u8) {
+        fn impl_test_plane_sum(line_size: u8) {
             let client = TestRuntime::client(&Default::default());
             cubecl_core::runtime_tests::plane::test_plane_sum::<TestRuntime, FloatType>(
                 client.clone(),
-                vectorization,
+                line_size,
             );
         }
         #[test]
@@ -439,11 +439,11 @@ macro_rules! testgen_plane {
             impl_test_plane_sum(4);
         }
 
-        fn impl_test_plane_prod(vectorization: u8) {
+        fn impl_test_plane_prod(line_size: u8) {
             let client = TestRuntime::client(&Default::default());
             cubecl_core::runtime_tests::plane::test_plane_prod::<TestRuntime, FloatType>(
                 client.clone(),
-                vectorization,
+                line_size,
             );
         }
         #[test]
@@ -459,11 +459,11 @@ macro_rules! testgen_plane {
             impl_test_plane_prod(4);
         }
 
-        fn impl_test_plane_max(vectorization: u8) {
+        fn impl_test_plane_max(line_size: u8) {
             let client = TestRuntime::client(&Default::default());
             cubecl_core::runtime_tests::plane::test_plane_max::<TestRuntime, FloatType>(
                 client.clone(),
-                vectorization,
+                line_size,
             );
         }
         #[test]
@@ -479,11 +479,11 @@ macro_rules! testgen_plane {
             impl_test_plane_max(4);
         }
 
-        fn impl_test_plane_min(vectorization: u8) {
+        fn impl_test_plane_min(line_size: u8) {
             let client = TestRuntime::client(&Default::default());
             cubecl_core::runtime_tests::plane::test_plane_min::<TestRuntime, FloatType>(
                 client.clone(),
-                vectorization,
+                line_size,
             );
         }
         #[test]
@@ -499,11 +499,11 @@ macro_rules! testgen_plane {
             impl_test_plane_min(4);
         }
 
-        fn impl_test_plane_all(vectorization: u8) {
+        fn impl_test_plane_all(line_size: u8) {
             let client = TestRuntime::client(&Default::default());
             cubecl_core::runtime_tests::plane::test_plane_all::<TestRuntime, FloatType>(
                 client.clone(),
-                vectorization,
+                line_size,
             );
         }
         #[test]
@@ -519,11 +519,11 @@ macro_rules! testgen_plane {
             impl_test_plane_all(4);
         }
 
-        fn impl_test_plane_any(vectorization: u8) {
+        fn impl_test_plane_any(line_size: u8) {
             let client = TestRuntime::client(&Default::default());
             cubecl_core::runtime_tests::plane::test_plane_any::<TestRuntime, FloatType>(
                 client.clone(),
-                vectorization,
+                line_size,
             );
         }
         #[test]
@@ -539,11 +539,11 @@ macro_rules! testgen_plane {
             impl_test_plane_any(4);
         }
 
-        fn impl_test_plane_elect(vectorization: u8) {
+        fn impl_test_plane_elect(line_size: u8) {
             let client = TestRuntime::client(&Default::default());
             cubecl_core::runtime_tests::plane::test_plane_elect::<TestRuntime, FloatType>(
                 client.clone(),
-                vectorization,
+                line_size,
             );
         }
         #[ignore]
@@ -562,11 +562,11 @@ macro_rules! testgen_plane {
             impl_test_plane_elect(4);
         }
 
-        fn impl_test_plane_broadcast(vectorization: u8) {
+        fn impl_test_plane_broadcast(line_size: u8) {
             let client = TestRuntime::client(&Default::default());
             cubecl_core::runtime_tests::plane::test_plane_broadcast::<TestRuntime, FloatType>(
                 client.clone(),
-                vectorization,
+                line_size,
             );
         }
         #[test]

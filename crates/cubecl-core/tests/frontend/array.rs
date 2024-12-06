@@ -9,18 +9,18 @@ pub fn array_read_write<T: Numeric>(#[comptime] array_size: u32) {
 }
 
 #[cube]
-pub fn array_to_vectorized_variable<T: Numeric>() -> T {
+pub fn array_to_lined_variable<T: Numeric>() -> T {
     let mut array = Array::<T>::new(2);
     array[0] = T::from_int(0);
     array[1] = T::from_int(1);
-    array.to_vectorized(2)
+    array.to_line(2)
 }
 
 #[cube]
-pub fn array_of_one_to_vectorized_variable<T: Numeric>() -> T {
+pub fn array_of_one_to_lined_variable<T: Numeric>() -> T {
     let mut array = Array::<T>::new(1);
     array[0] = T::from_int(3);
-    array.to_vectorized(1)
+    array.to_line(1)
 }
 
 #[cube]
@@ -68,24 +68,21 @@ mod tests {
     }
 
     #[test]
-    fn cube_array_to_vectorized() {
+    fn cube_array_to_lined() {
         let mut context = CubeContext::default();
 
-        array_to_vectorized_variable::expand::<ElemType>(&mut context);
-        assert_eq!(
-            context.into_scope().operations,
-            inline_macro_ref_to_vectorized()
-        );
+        array_to_lined_variable::expand::<ElemType>(&mut context);
+        assert_eq!(context.into_scope().operations, inline_macro_ref_to_lined());
     }
 
     #[test]
-    fn cube_array_of_one_to_vectorized() {
+    fn cube_array_of_one_to_lined() {
         let mut context = CubeContext::default();
 
-        array_of_one_to_vectorized_variable::expand::<ElemType>(&mut context);
+        array_of_one_to_lined_variable::expand::<ElemType>(&mut context);
         assert_eq!(
             context.into_scope().operations,
-            inline_macro_ref_one_to_vectorized()
+            inline_macro_ref_one_to_lined()
         );
     }
 
@@ -137,10 +134,10 @@ mod tests {
         scope.operations
     }
 
-    fn inline_macro_ref_to_vectorized() -> Vec<ir::Instruction> {
+    fn inline_macro_ref_to_lined() -> Vec<ir::Instruction> {
         let context = CubeContext::default();
         let scalar_item = Item::new(ElemType::as_elem());
-        let vectorized_item = Item::vectorized(ElemType::as_elem(), NonZero::new(2));
+        let lined_item = Item::lined(ElemType::as_elem(), NonZero::new(2));
 
         let mut scope = context.into_scope();
         let pos0: Variable = 0u32.into();
@@ -149,30 +146,30 @@ mod tests {
         cpa!(scope, array[pos0] = 0.0_f32);
         cpa!(scope, array[pos1] = 1.0_f32);
 
-        let vectorized_var = scope.create_local(vectorized_item);
+        let lined_var = scope.create_local(lined_item);
         let tmp = scope.create_local(scalar_item);
         cpa!(scope, tmp = array[pos0]);
-        cpa!(scope, vectorized_var[pos0] = tmp);
+        cpa!(scope, lined_var[pos0] = tmp);
         cpa!(scope, tmp = array[pos1]);
-        cpa!(scope, vectorized_var[pos1] = tmp);
+        cpa!(scope, lined_var[pos1] = tmp);
 
         scope.operations
     }
 
-    fn inline_macro_ref_one_to_vectorized() -> Vec<ir::Instruction> {
+    fn inline_macro_ref_one_to_lined() -> Vec<ir::Instruction> {
         let context = CubeContext::default();
         let scalar_item = Item::new(ElemType::as_elem());
-        let unvectorized_item = Item::vectorized(ElemType::as_elem(), NonZero::new(1));
+        let unlined_item = Item::lined(ElemType::as_elem(), NonZero::new(1));
 
         let mut scope = context.into_scope();
         let pos0: Variable = 0u32.into();
         let array = scope.create_local_array(scalar_item, 1);
         cpa!(scope, array[pos0] = 3.0_f32);
 
-        let unvectorized_var = scope.create_local(unvectorized_item);
+        let unlined_var = scope.create_local(unlined_item);
         let tmp = scope.create_local(scalar_item);
         cpa!(scope, tmp = array[pos0]);
-        cpa!(scope, unvectorized_var = tmp);
+        cpa!(scope, unlined_var = tmp);
 
         scope.operations
     }

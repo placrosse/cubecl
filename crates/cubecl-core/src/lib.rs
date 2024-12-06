@@ -63,16 +63,12 @@ pub fn calculate_cube_count_elemwise(num_elems: usize, cube_dim: CubeDim) -> Cub
     CubeCount::Static(cube_count_x as u32, cube_count_y as u32, 1)
 }
 
-pub fn tensor_vectorization_factor(
-    factors: &[u8],
+pub fn tensor_line_size(
+    supported_line_sizes: &[u8],
     shape: &[usize],
     strides: &[usize],
     dim: usize,
 ) -> u8 {
-    tensor_line_size(factors, shape, strides, dim)
-}
-
-pub fn tensor_line_size(factors: &[u8], shape: &[usize], strides: &[usize], dim: usize) -> u8 {
     match strides.get(dim) {
         Some(val) => {
             if *val != 1 {
@@ -93,17 +89,17 @@ pub fn tensor_line_size(factors: &[u8], shape: &[usize], strides: &[usize], dim:
         None
     };
 
-    for factor in factors {
-        let factor = *factor as usize;
+    for line_size in supported_line_sizes {
+        let line_size = *line_size as usize;
 
-        if shape_check % factor == 0 {
+        if shape_check % line_size == 0 {
             match stride_check {
                 Some(check) => {
-                    if check % factor == 0 {
-                        return factor as u8;
+                    if check % line_size == 0 {
+                        return line_size as u8;
                     }
                 }
-                None => return factor as u8,
+                None => return line_size as u8,
             }
         }
     }

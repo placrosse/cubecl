@@ -2,7 +2,7 @@ use std::num::NonZeroU8;
 
 use crate::ir::{
     BinaryOperator, Elem, Instruction, Item, Operation, Operator, UnaryOperator, Variable,
-    Vectorization,
+    LineSize,
 };
 use crate::prelude::{CubeType, ExpandElementTyped};
 use crate::{
@@ -25,9 +25,9 @@ where
     let item_lhs = lhs.item;
     let item_rhs = rhs.item;
 
-    let vectorization = find_vectorization(item_lhs.vectorization, item_rhs.vectorization);
+    let line_size = find_line_size(item_lhs.line_size, item_rhs.line_size);
 
-    let item = Item::vectorized(item_lhs.elem, vectorization);
+    let item = Item::lined(item_lhs.elem, line_size);
 
     let output = context.create_local_binding(item);
     let out = *output;
@@ -105,11 +105,11 @@ where
     let rhs: Variable = *rhs;
     let item = lhs.item;
 
-    find_vectorization(item.vectorization, rhs.item.vectorization);
+    find_line_size(item.line_size, rhs.item.line_size);
 
     let out_item = Item {
         elem: Elem::Bool,
-        vectorization: item.vectorization,
+        line_size: item.line_size,
     };
 
     let out = context.create_local_binding(out_item);
@@ -134,7 +134,7 @@ where
     let lhs_var: Variable = *lhs;
     let rhs: Variable = *rhs;
 
-    find_vectorization(lhs_var.item.vectorization, rhs.item.vectorization);
+    find_line_size(lhs_var.item.line_size, rhs.item.line_size);
 
     let op = func(BinaryOperator { lhs: lhs_var, rhs });
 
@@ -201,7 +201,7 @@ where
     out
 }
 
-fn find_vectorization(lhs: Vectorization, rhs: Vectorization) -> Vectorization {
+fn find_line_size(lhs: LineSize, rhs: LineSize) -> LineSize {
     match (lhs, rhs) {
         (None, None) => None,
         (None, Some(rhs)) => Some(rhs),
@@ -213,9 +213,9 @@ fn find_vectorization(lhs: Vectorization, rhs: Vectorization) -> Vectorization {
                 Some(core::cmp::max(lhs, rhs))
             } else {
                 panic!(
-                    "Left and right have different vectorizations.
+                    "Left and right have different line_sizes.
                     Left: {lhs}, right: {rhs}.
-                    Auto-matching fixed vectorization currently unsupported."
+                    Auto-matching fixed line_size currently unsupported."
                 );
             }
         }

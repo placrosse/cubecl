@@ -24,7 +24,7 @@ impl<F: Float, FC: Float, I: LoadInfo, T: TilingOrder> SmemLoader<F, FC, I, T>
         #[comptime] comptime_info: ComptimeCmmaInfo,
     ) {
         let plane_dim = comptime_info.plane_dim;
-        let tensor_vec = vectorization_of(gmem);
+        let tensor_vec = line_size_of(gmem);
         let num_unit_reads =
             comptime! {I::num_tile_elements(comptime_info) / (tensor_vec * plane_dim)};
         let num_units_per_row = I::tile_width(comptime_info) / tensor_vec;

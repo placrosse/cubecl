@@ -24,8 +24,8 @@ pub fn assign_mut_input(mut y: u32) -> u32 {
 }
 
 #[cube]
-pub fn assign_vectorized(y: u32) -> u32 {
-    let x = u32::vectorized(1, vectorization_of(&y));
+pub fn assign_lined(y: u32) -> u32 {
+    let x = u32::lined(1, line_size_of(&y));
     x + y
 }
 
@@ -92,15 +92,15 @@ mod tests {
     }
 
     #[test]
-    fn cube_assign_vectorized_test() {
+    fn cube_assign_lined_test() {
         let mut context = CubeContext::default();
 
-        let y = context.create_local_binding(Item::vectorized(u32::as_elem(), NonZero::new(4)));
+        let y = context.create_local_binding(Item::lined(u32::as_elem(), NonZero::new(4)));
 
-        assign_vectorized::expand(&mut context, y.into());
+        assign_lined::expand(&mut context, y.into());
         let scope = context.into_scope();
 
-        assert_eq!(scope.operations, inline_macro_ref_assign_vectorized());
+        assert_eq!(scope.operations, inline_macro_ref_assign_lined());
     }
 
     #[test]
@@ -169,9 +169,9 @@ mod tests {
         scope.operations
     }
 
-    fn inline_macro_ref_assign_vectorized() -> Vec<Instruction> {
+    fn inline_macro_ref_assign_lined() -> Vec<Instruction> {
         let mut context = CubeContext::default();
-        let item = Item::vectorized(u32::as_elem(), NonZero::new(4));
+        let item = Item::lined(u32::as_elem(), NonZero::new(4));
         let y = context.create_local_binding(item);
 
         let mut scope = context.into_scope();

@@ -337,7 +337,7 @@ impl Scope {
         let item_global = match item.elem() {
             Elem::Bool => Item {
                 elem: u32::as_elem(),
-                vectorization: item.vectorization,
+                line_size: item.line_size,
             },
             _ => item,
         };

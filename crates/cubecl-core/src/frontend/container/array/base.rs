@@ -108,7 +108,7 @@ mod line {
             expand: <Self as CubeType>::ExpandType,
             context: &mut CubeContext,
         ) -> u32 {
-            expand.__expand_line_size_method(context)
+            expand.__expand_array_line_size_method(context)
         }
     }
 
@@ -117,38 +117,31 @@ mod line {
         pub fn line_size(&self) -> u32 {
             self.expand
                 .item
-                .vectorization
+                .line_size
                 .unwrap_or(NonZero::new(1).unwrap())
                 .get() as u32
         }
 
         // Expand method of [size](Array::line_size).
-        pub fn __expand_line_size_method(&self, _content: &mut CubeContext) -> u32 {
+        pub fn __expand_array_line_size_method(&self, _content: &mut CubeContext) -> u32 {
             self.line_size()
         }
     }
-}
-
-/// Module that contains the implementation details of vectorization functions.
-///
-/// TODO: Remove vectorization in favor of the line API.
-mod vectorization {
-    use super::*;
 
     impl<T: CubePrimitive + Clone> Array<T> {
         #[allow(unused_variables)]
-        pub fn vectorized<L: Index>(length: L, vectorization_factor: u32) -> Self {
+        pub fn lined<L: Index>(length: L, lise_size: u32) -> Self {
             Array { _val: PhantomData }
         }
 
-        pub fn to_vectorized(self, _vectorization_factor: u32) -> T {
+        pub fn to_line(self, _line_size: u32) -> T {
             unexpanded!()
         }
 
-        pub fn __expand_vectorized(
+        pub fn __expand_lined(
             context: &mut CubeContext,
             size: ExpandElementTyped<u32>,
-            vectorization_factor: u32,
+            line_size: u32,
         ) -> <Self as CubeType>::ExpandType {
             let size = size.value();
             let size = match size.kind {
@@ -157,7 +150,7 @@ mod vectorization {
             };
             context
                 .create_local_array(
-                    Item::vectorized(T::as_elem(), NonZero::new(vectorization_factor as u8)),
+                    Item::lined(T::as_elem(), NonZero::new(line_size as u8)),
                     size,
                 )
                 .into()
@@ -165,19 +158,19 @@ mod vectorization {
     }
 
     impl<C: CubePrimitive> ExpandElementTyped<Array<C>> {
-        pub fn __expand_to_vectorized_method(
+        pub fn __expand_array_to_line_method(
             self,
             context: &mut CubeContext,
-            vectorization_factor: ExpandElementTyped<u32>,
+            line_size: ExpandElementTyped<u32>,
         ) -> ExpandElementTyped<C> {
-            let factor = vectorization_factor
+            let line_size = line_size
                 .constant()
-                .expect("Vectorization must be comptime")
+                .expect("line size must be comptime")
                 .as_u32();
             let var = self.expand.clone();
-            let item = Item::vectorized(var.item.elem(), NonZero::new(factor as u8));
+            let item = Item::lined(var.item.elem(), NonZero::new(line_size as u8));
 
-            let new_var = if factor == 1 {
+            let new_var = if line_size == 1 {
                 let new_var = context.create_local_binding(item);
                 let element =
                     index::expand(context, self.clone(), ExpandElementTyped::from_lit(0u32));
@@ -185,7 +178,7 @@ mod vectorization {
                 new_var
             } else {
                 let new_var = context.create_local_variable(item);
-                for i in 0..factor {
+                for i in 0..line_size {
                     let expand: Self = self.expand.clone().into();
                     let element = index::expand(context, expand, ExpandElementTyped::from_lit(i));
                     index_assign::expand::<Array<C>>(

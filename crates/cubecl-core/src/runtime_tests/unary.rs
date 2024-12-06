@@ -41,8 +41,8 @@ macro_rules! test_unary_impl {
         $float_type:ident,
         $unary_func:expr,
         [$({
-            input_vectorization: $input_vectorization:expr,
-            out_vectorization: $out_vectorization:expr,
+            input_line_size: $input_line_size:expr,
+            out_line_size: $out_line_size:expr,
             input: $input:expr,
             expected: $expected:expr
         }),*]) => {
@@ -64,9 +64,9 @@ macro_rules! test_unary_impl {
                     test_function::launch_unchecked::<$float_type, R>(
                         &client,
                         CubeCount::Static(1, 1, 1),
-                        CubeDim::new((input.len() / $input_vectorization as usize) as u32, 1, 1),
-                        ArrayArg::from_raw_parts::<$float_type>(&input_handle, input.len(), $input_vectorization),
-                        ArrayArg::from_raw_parts::<$float_type>(&output_handle, $expected.len(), $out_vectorization),
+                        CubeDim::new((input.len() / $input_line_size as usize) as u32, 1, 1),
+                        ArrayArg::from_raw_parts::<$float_type>(&input_handle, input.len(), $input_line_size),
+                        ArrayArg::from_raw_parts::<$float_type>(&output_handle, $expected.len(), $out_line_size),
                     )
                 };
 
@@ -83,26 +83,26 @@ test_unary_impl!(
     F::magnitude,
     [
         {
-            input_vectorization: 1,
-            out_vectorization: 1,
+            input_line_size: 1,
+            out_line_size: 1,
             input: as_type![F: -1., 23.1, -1.4, 5.1],
             expected: as_type![F: 1., 23.1, 1.4, 5.1]
         },
         {
-            input_vectorization: 2,
-            out_vectorization: 1,
+            input_line_size: 2,
+            out_line_size: 1,
             input: as_type![F: -1., 0., 1., 5.],
             expected: as_type![F: 1.0, 5.099]
         },
         {
-            input_vectorization: 4,
-            out_vectorization: 1,
+            input_line_size: 4,
+            out_line_size: 1,
             input: as_type![F: -1., 0., 1., 5.],
             expected: as_type![F: 5.196]
         },
         {
-            input_vectorization: 4,
-            out_vectorization: 1,
+            input_line_size: 4,
+            out_line_size: 1,
             input: as_type![F: 0., 0., 0., 0.],
             expected: as_type![F: 0.]
         }
@@ -115,32 +115,32 @@ test_unary_impl!(
     F::normalize,
     [
         {
-            input_vectorization: 1,
-            out_vectorization: 1,
+            input_line_size: 1,
+            out_line_size: 1,
             input: as_type![F: -1., 0., 1., 5.],
             expected: as_type![F: -1., f32::NAN, 1., 1.]
         },
         {
-            input_vectorization: 2,
-            out_vectorization: 2,
+            input_line_size: 2,
+            out_line_size: 2,
             input: as_type![F: -1., 0., 1., 5.],
             expected: as_type![F: -1.0, 0.0, 0.196, 0.981]
         },
         {
-            input_vectorization: 4,
-            out_vectorization: 4,
+            input_line_size: 4,
+            out_line_size: 4,
             input: as_type![F: -1., 0., 1., 5.],
             expected: as_type![F: -0.192, 0.0, 0.192, 0.962]
         },
         {
-            input_vectorization: 4,
-            out_vectorization: 4,
+            input_line_size: 4,
+            out_line_size: 4,
             input: as_type![F: 0., 0., 0., 0.],
             expected: as_type![F: f32::NAN, f32::NAN, f32::NAN, f32::NAN]
         },
         {
-            input_vectorization: 2,
-            out_vectorization: 2,
+            input_line_size: 2,
+            out_line_size: 2,
             input: as_type![F: 0., 0., 1., 0.],
             expected: as_type![F: f32::NAN, f32::NAN, 1., 0.]
         }

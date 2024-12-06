@@ -2,7 +2,7 @@ use std::{marker::PhantomData, num::NonZero};
 
 use crate::{
     compute::{KernelBuilder, KernelLauncher},
-    ir::{Item, Vectorization},
+    ir::{Item, LineSize},
     prelude::{
         ArgSettings, CubePrimitive, ExpandElementTyped, LaunchArg, LaunchArgExpand, TensorHandleRef,
     },
@@ -14,7 +14,7 @@ use super::Array;
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct ArrayCompilationArg {
     pub inplace: Option<u16>,
-    pub vectorisation: Vectorization,
+    pub line_size: LineSize,
 }
 
 /// Tensor representation with a reference to the [server handle](cubecl_runtime::server::Handle).
@@ -33,7 +33,7 @@ impl<C: CubePrimitive> LaunchArgExpand for Array<C> {
         builder: &mut KernelBuilder,
     ) -> ExpandElementTyped<Array<C>> {
         builder
-            .input_array(Item::vectorized(C::as_elem(), arg.vectorisation))
+            .input_array(Item::lined(C::as_elem(), arg.line_size))
             .into()
     }
     fn expand_output(
@@ -43,7 +43,7 @@ impl<C: CubePrimitive> LaunchArgExpand for Array<C> {
         match arg.inplace {
             Some(id) => builder.inplace_output(id).into(),
             None => builder
-                .output_array(Item::vectorized(C::as_elem(), arg.vectorisation))
+                .output_array(Item::lined(C::as_elem(), arg.line_size))
                 .into(),
         }
     }
@@ -54,8 +54,8 @@ pub enum ArrayArg<'a, R: Runtime> {
     Handle {
         /// The array handle.
         handle: ArrayHandleRef<'a, R>,
-        /// The vectorization factor.
-        vectorization_factor: u8,
+        /// The line size.
+        line_size: u8,
     },
     /// The array is aliasing another input array.
     Alias {
@@ -79,11 +79,11 @@ impl<'a, R: Runtime> ArrayArg<'a, R> {
     pub unsafe fn from_raw_parts<E: CubePrimitive>(
         handle: &'a cubecl_runtime::server::Handle,
         length: usize,
-        vectorization_factor: u8,
+        line_size: u8,
     ) -> Self {
         ArrayArg::Handle {
             handle: ArrayHandleRef::from_raw_parts(handle, length, E::as_elem().size()),
-            vectorization_factor,
+            line_size,
         }
     }
 
@@ -95,12 +95,12 @@ impl<'a, R: Runtime> ArrayArg<'a, R> {
     pub unsafe fn from_raw_parts_and_size(
         handle: &'a cubecl_runtime::server::Handle,
         length: usize,
-        vectorization_factor: u8,
+        line_size: u8,
         elem_size: usize,
     ) -> Self {
         ArrayArg::Handle {
             handle: ArrayHandleRef::from_raw_parts(handle, length, elem_size),
-            vectorization_factor,
+            line_size,
         }
     }
 }
@@ -144,15 +144,15 @@ impl<C: CubePrimitive> LaunchArg for Array<C> {
     fn compilation_arg<R: Runtime>(runtime_arg: &Self::RuntimeArg<'_, R>) -> Self::CompilationArg {
         match runtime_arg {
             ArrayArg::Handle {
-                vectorization_factor,
+                line_size,
                 ..
             } => ArrayCompilationArg {
                 inplace: None,
-                vectorisation: Vectorization::Some(NonZero::new(*vectorization_factor).unwrap()),
+                line_size: LineSize::Some(NonZero::new(*line_size).unwrap()),
             },
             ArrayArg::Alias { input_pos } => ArrayCompilationArg {
                 inplace: Some(*input_pos as u16),
-                vectorisation: Vectorization::None,
+                line_size: LineSize::None,
             },
         }
     }

@@ -492,7 +492,7 @@ mod tests {
                     kind: Local {{ id: {out_number}, depth: 0 }}, \
                     item: Item {{ \
                         elem: {out_type}, \
-                        vectorization: None \
+                        line_size: None \
                     }} \
                 }}), \
                 operation: Operator({ops_name}(BinaryOperator {{ \
@@ -500,14 +500,14 @@ mod tests {
                     kind: Local {{ id: 0, depth: 0 }}, \
                     item: Item {{ \
                         elem: {in_type}, \
-                        vectorization: None \
+                        line_size: None \
                     }} \
                 }}, \
                 rhs: Variable {{ \
                     kind: Local {{ id: 1, depth: 0 }}, \
                     item: Item {{ \
                         elem: {in_type}, \
-                        vectorization: None \
+                        line_size: None \
                     }} \
                 }} \
             }})) }}]"
@@ -518,7 +518,7 @@ mod tests {
                     kind: Local {{ id: 0, depth: 0 }}, \
                     item: Item {{ \
                         elem: {out_type}, \
-                        vectorization: None \
+                        line_size: None \
                     }} \
                 }}), \
                 operation: Operator({ops_name}(UnaryOperator {{ \
@@ -526,7 +526,7 @@ mod tests {
                     kind: Local {{ id: 0, depth: 0 }}, \
                     item: Item {{ \
                         elem: {in_type}, \
-                        vectorization: None \
+                        line_size: None \
                     }} \
                 }} \
             }})) }}]"

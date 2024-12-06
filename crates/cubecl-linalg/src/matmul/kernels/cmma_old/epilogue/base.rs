@@ -112,7 +112,7 @@ fn write_tile<F: Float, W: BlockWriter<F>>(
 
     let num_accum_groups_in_block_row = block_size_n / (tile_width * num_accumulators);
 
-    let out_vec = vectorization_of(out);
+    let out_vec = line_size_of(out);
     let n_units_per_tile_row = tile_height / out_vec;
     let smem_stride = num_tile_elements;
     let plane_dim = comptime_info.plane_dim;

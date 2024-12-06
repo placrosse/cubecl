@@ -3,8 +3,8 @@ use std::num::NonZero;
 use super::Compiler;
 use crate::{
     ir::{
-        Binding, CubeDim, Elem, Item, KernelDefinition, Location, ReadingStrategy, Scope, Variable,
-        VariableKind, Vectorization, Visibility,
+        Binding, CubeDim, Elem, Item, KernelDefinition, LineSize, Location, ReadingStrategy, Scope,
+        Variable, VariableKind, Visibility,
     },
     prelude::CubePrimitive,
     Runtime,
@@ -29,31 +29,25 @@ pub struct KernelExpansion {
     pub kernel_name: String,
 }
 
-/// Simply indicate the output that can be replaced by the input.
+/// Simply indicate the line size that can be replaced by the input.
 #[derive(new, Default, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct InplaceMapping {
-    /// Input position.
+    /// line size n.
     pub pos_input: usize,
     /// Output position.
     pub pos_output: usize,
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
-enum VectorizationPartial {
-    Input {
-        pos: usize,
-        vectorization: Vectorization,
-    },
-    Output {
-        pos: usize,
-        vectorization: Vectorization,
-    },
+enum LinePartial {
+    Input { pos: usize, line_size: LineSize },
+    Output { pos: usize, line_size: LineSize },
 }
 
 #[derive(Default, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct KernelSettings {
     pub mappings: Vec<InplaceMapping>,
-    vectorization_partial: Vec<VectorizationPartial>,
+    line_partial: Vec<LinePartial>,
     pub cube_dim: CubeDim,
     pub reading_strategy: Vec<(u16, ReadingStrategy)>,
     pub kernel_name: String,
@@ -61,7 +55,7 @@ pub struct KernelSettings {
 
 impl core::fmt::Display for KernelSettings {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // The goal of this implementation is to generate the shortest representation
+        // The line size  implementation is to generate the shortest representation
         // that won't clash with any other compilation settings. This is crucial since we rely on
         // this representation to know when to compile a new version of a kernel.
         //
@@ -75,9 +69,9 @@ impl core::fmt::Display for KernelSettings {
         //   * Output layout: o
         //   * Plain:         p
         //
-        // * Vectorization Global:    vg{factor}
-        // * Vectorization Partial Input:    v{factor}i{pos}
-        // * Vectorization Partial Output:    vo
+        // * Line Size Global:    vg{line_size}
+        // * Line Size Partial Input:    v{line_size}i{pos}
+        // * Line Size Partial Output:    vo
         // * Cube Dim X: x
         // * Cube Dim Y: y
         // * Cube Dim Z: z
@@ -98,15 +92,16 @@ impl core::fmt::Display for KernelSettings {
             }?;
         }
 
-        for vectorization in self.vectorization_partial.iter() {
-            match vectorization {
-                VectorizationPartial::Input { pos, vectorization } => f.write_fmt(format_args!(
+        for line_size in self.line_partial.iter() {
+            match line_size {
+                LinePartial::Input { pos, line_size } => f.write_fmt(format_args!(
                     "v{}i{pos}",
-                    vectorization.map(NonZero::get).unwrap_or(1)
+                    line_size.map(NonZero::get).unwrap_or(1)
                 ))?,
-                VectorizationPartial::Output { pos, vectorization } => f.write_fmt(
-                    format_args!("v{}o{pos}", vectorization.map(NonZero::get).unwrap_or(1)),
-                )?,
+                LinePartial::Output { pos, line_size } => f.write_fmt(format_args!(
+                    "v{}o{pos}",
+                    line_size.map(NonZero::get).unwrap_or(1)
+                ))?,
             };
         }
 
@@ -118,46 +113,43 @@ impl core::fmt::Display for KernelSettings {
 }
 
 impl KernelSettings {
-    /// Compile the shader with vectorization enabled for an input.
+    /// Compile the shader with line size enabled for an input.
     #[allow(dead_code)]
-    pub fn vectorize_input(mut self, position: usize, vectorization: Vectorization) -> Self {
-        // Not setting the vectorization factor when it's the default value reduces the kernel id
+    pub fn lined_input(mut self, position: usize, line_size: LineSize) -> Self {
+        // Not setting the line size when it's the default value reduces the kernel id
         // size.
-        if vectorization.is_none() {
+        if line_size.is_none() {
             return self;
         }
 
-        self.vectorization_partial
-            .push(VectorizationPartial::Input {
-                pos: position,
-                vectorization,
-            });
+        self.line_partial.push(LinePartial::Input {
+            pos: position,
+            line_size,
+        });
         self
     }
 
-    /// Compile the shader with vectorization enabled for an output.
+    /// Compile the shader with lines enabled for an output.
     #[allow(dead_code)]
-    pub fn vectorize_output(mut self, position: usize, vectorization: Vectorization) -> Self {
-        // Not setting the vectorization factor when it's the default value reduces the kernel id
-        // size.
-        if vectorization.is_none() {
+    pub fn lined_output(mut self, position: usize, line_size: LineSize) -> Self {
+        // Not setting the line size when it's the default value reduces the kernel id size.
+        if line_size.is_none() {
             return self;
         }
 
-        self.vectorization_partial
-            .push(VectorizationPartial::Output {
-                pos: position,
-                vectorization,
-            });
+        self.line_partial.push(LinePartial::Output {
+            pos: position,
+            line_size,
+        });
         self
     }
 
-    /// Fetch the vectorization for the provided input position.
-    pub fn vectorization_input(&self, position: usize) -> Vectorization {
-        for partial in self.vectorization_partial.iter() {
-            if let VectorizationPartial::Input { pos, vectorization } = partial {
+    /// Fetch the line size for the provided input position.
+    pub fn line_size_input(&self, position: usize) -> LineSize {
+        for partial in self.line_partial.iter() {
+            if let LinePartial::Input { pos, line_size } = partial {
                 if *pos == position {
-                    return *vectorization;
+                    return *line_size;
                 }
             }
         }
@@ -165,12 +157,12 @@ impl KernelSettings {
         None
     }
 
-    /// Fetch the vectorization for the provided output position.
-    pub fn vectorization_output(&self, position: usize) -> Vectorization {
-        for partial in self.vectorization_partial.iter() {
-            if let VectorizationPartial::Output { pos, vectorization } = partial {
+    /// Fetch the line size for the provided output position.
+    pub fn line_size_output(&self, position: usize) -> LineSize {
+        for partial in self.line_partial.iter() {
+            if let LinePartial::Output { pos, line_size } = partial {
                 if *pos == position {
-                    return *vectorization;
+                    return *line_size;
                 }
             }
         }
@@ -524,7 +516,7 @@ impl KernelIntegrator {
 fn bool_item(ty: Item) -> Item {
     Item {
         elem: bool_elem(ty.elem),
-        vectorization: ty.vectorization,
+        line_size: ty.line_size,
     }
 }
 

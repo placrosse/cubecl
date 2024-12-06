@@ -15,13 +15,13 @@ pub fn test_kernel_assign_scalar<R: Runtime, F: Float + CubeElement>(
 ) {
     let handle = client.create(F::as_bytes(&[F::new(0.0), F::new(1.0)]));
 
-    let vectorization = 2;
+    let line_size = 2;
 
     kernel_assign::launch::<F, R>(
         &client,
         CubeCount::Static(1, 1, 1),
         CubeDim::default(),
-        unsafe { ArrayArg::from_raw_parts::<F>(&handle, 2, vectorization) },
+        unsafe { ArrayArg::from_raw_parts::<F>(&handle, 2, line_size) },
     );
 
     let actual = client.read_one(handle.binding());

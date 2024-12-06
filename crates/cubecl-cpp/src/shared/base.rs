@@ -921,7 +921,7 @@ impl<D: Dialect> CppCompiler<D> {
     fn compile_item(&mut self, item: gpu::Item) -> Item<D> {
         let item = Item::new(
             self.compile_elem(item.elem),
-            item.vectorization.map(NonZero::get).unwrap_or(1).into(),
+            item.line_size.map(NonZero::get).unwrap_or(1).into(),
         );
         if item.elem != super::Elem::TF32 {
             self.items.insert(item);

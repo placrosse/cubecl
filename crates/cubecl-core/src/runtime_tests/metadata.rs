@@ -189,7 +189,7 @@ pub fn test_buffer_len_discontiguous<R: Runtime>(client: ComputeClient<R::Server
     assert_eq!(actual[0], 64);
 }
 
-pub fn test_buffer_len_vectorized<R: Runtime>(client: ComputeClient<R::Server, R::Channel>) {
+pub fn test_buffer_len_lined<R: Runtime>(client: ComputeClient<R::Server, R::Channel>) {
     let handle1 = client.empty(32 * core::mem::size_of::<u32>());
 
     unsafe {
@@ -266,9 +266,9 @@ macro_rules! testgen_metadata {
         }
 
         #[test]
-        fn test_buffer_len_vectorized() {
+        fn test_buffer_len_lined() {
             let client = TestRuntime::client(&Default::default());
-            cubecl_core::runtime_tests::metadata::test_buffer_len_vectorized::<TestRuntime>(client);
+            cubecl_core::runtime_tests::metadata::test_buffer_len_lined::<TestRuntime>(client);
         }
 
         #[test]

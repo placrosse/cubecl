@@ -73,8 +73,8 @@ fn search_loop(opt: &mut Optimizer) -> bool {
 }
 
 pub fn item_compatible(lhs: Item, rhs: Item) -> bool {
-    let vectorization_lhs = lhs.vectorization.map(|it| it.get()).unwrap_or(1);
-    let vectorization_rhs = rhs.vectorization.map(|it| it.get()).unwrap_or(1);
+    let vectorization_lhs = lhs.line_size.map(|it| it.get()).unwrap_or(1);
+    let vectorization_rhs = rhs.line_size.map(|it| it.get()).unwrap_or(1);
     vectorization_lhs == vectorization_rhs && lhs.elem() == rhs.elem()
 }
 

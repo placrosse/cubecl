@@ -52,7 +52,7 @@ impl OptimizerPass for CompositeMerge {
                     let item = op.out.unwrap().item;
                     if let Some(index) = lhs.as_const() {
                         let index = index.as_u32();
-                        let vectorization = item.vectorization.map(|it| it.get()).unwrap_or(1);
+                        let vectorization = item.line_size.map(|it| it.get()).unwrap_or(1);
                         if vectorization > 1 {
                             let assigns = assigns.entry((id, depth)).or_default();
                             assigns.push((idx, index, rhs));
@@ -118,7 +118,7 @@ impl OptimizerPass for RemoveIndexScalar {
                         if let Some(index) = rhs.as_const() {
                             let index = index.as_u32();
                             let vectorization =
-                                lhs.item.vectorization.map(|it| it.get()).unwrap_or(1);
+                                lhs.item.line_size.map(|it| it.get()).unwrap_or(1);
                             if vectorization == 1 {
                                 assert_eq!(index, 0, "Can't index into scalar");
                                 op.operation = Operation::Copy(*lhs);

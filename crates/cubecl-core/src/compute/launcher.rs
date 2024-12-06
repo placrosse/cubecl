@@ -231,12 +231,12 @@ pub enum ScalarState<T> {
 impl<R: Runtime> TensorState<R> {
     /// Push a new tensor to the state.
     pub fn push_tensor(&mut self, tensor: &TensorArg<'_, R>) {
-        let (tensor, vectorization) = match tensor {
+        let (tensor, line_size) = match tensor {
             TensorArg::Handle {
                 handle,
-                vectorization_factor,
+                line_size,
                 ..
-            } => (handle, vectorization_factor),
+            } => (handle, line_size),
             TensorArg::Alias { .. } => return,
         };
 
@@ -255,9 +255,9 @@ impl<R: Runtime> TensorState<R> {
             panic!("Should be init")
         };
 
-        let elem_size = tensor.elem_size * *vectorization as usize;
+        let elem_size = tensor.elem_size * *line_size as usize;
         let buffer_len = tensor.handle.size() / elem_size as u64;
-        let len = tensor.shape.iter().product::<usize>() / *vectorization as usize;
+        let len = tensor.shape.iter().product::<usize>() / *line_size as usize;
         bindings.push(tensor.handle.clone().binding());
         metadata.with_tensor(
             tensor.strides.len() as u32,
@@ -270,12 +270,12 @@ impl<R: Runtime> TensorState<R> {
 
     /// Push a new array to the state.
     pub fn push_array(&mut self, array: &ArrayArg<'_, R>) {
-        let (array, vectorization) = match array {
+        let (array, line_size) = match array {
             ArrayArg::Handle {
                 handle,
-                vectorization_factor,
+                line_size,
                 ..
-            } => (handle, vectorization_factor),
+            } => (handle, line_size),
             ArrayArg::Alias { .. } => return,
         };
 
@@ -294,7 +294,7 @@ impl<R: Runtime> TensorState<R> {
             panic!("Should be init")
         };
 
-        let elem_size = array.elem_size * *vectorization as usize;
+        let elem_size = array.elem_size * *line_size as usize;
         let buffer_len = array.handle.size() / elem_size as u64;
         bindings.push(array.handle.clone().binding());
         metadata.with_array(buffer_len as u32, array.length[0] as u32);

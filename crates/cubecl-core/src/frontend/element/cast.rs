@@ -19,9 +19,9 @@ pub trait Cast: CubePrimitive {
             return value.expand.into();
         }
 
-        let new_var = context.create_local_binding(Item::vectorized(
+        let new_var = context.create_local_binding(Item::lined(
             <Self as CubePrimitive>::as_elem(),
-            value.expand.item.vectorization,
+            value.expand.item.line_size,
         ));
         cast::expand(context, value, new_var.clone().into());
         new_var.into()
@@ -49,9 +49,9 @@ pub trait BitCast: CubePrimitive {
     ) -> <Self as CubeType>::ExpandType {
         let value: ExpandElement = value.into();
         let var: Variable = *value;
-        let new_var = context.create_local_binding(Item::vectorized(
+        let new_var = context.create_local_binding(Item::lined(
             <Self as CubePrimitive>::as_elem(),
-            var.item.vectorization,
+            var.item.line_size,
         ));
         context.register(Instruction::new(
             Operator::Bitcast(UnaryOperator { input: *value }),

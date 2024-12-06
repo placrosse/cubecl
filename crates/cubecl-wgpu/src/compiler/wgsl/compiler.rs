@@ -301,12 +301,12 @@ impl WgslCompiler {
 
     fn compile_item(item: cube::Item) -> Item {
         let elem = Self::compile_elem(item.elem);
-        match item.vectorization.map(|it| it.get()).unwrap_or(1) {
+        match item.line_size.map(|it| it.get()).unwrap_or(1) {
             1 => wgsl::Item::Scalar(elem),
             2 => wgsl::Item::Vec2(elem),
             3 => wgsl::Item::Vec3(elem),
             4 => wgsl::Item::Vec4(elem),
-            _ => panic!("Unsupported vectorizations scheme {:?}", item.vectorization),
+            _ => panic!("Unsupported vectorizations scheme {:?}", item.line_size),
         }
     }
 

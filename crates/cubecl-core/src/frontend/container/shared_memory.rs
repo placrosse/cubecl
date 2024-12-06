@@ -35,40 +35,40 @@ impl<T: CubePrimitive + Clone> SharedMemory<T> {
         SharedMemory { _val: PhantomData }
     }
 
-    pub fn new_lined<S: Index>(_size: S, _vectorization_factor: u32) -> SharedMemory<Line<T>> {
+    pub fn new_lined<S: Index>(_size: S, _line_size: u32) -> SharedMemory<Line<T>> {
         SharedMemory { _val: PhantomData }
     }
 
     pub fn __expand_new_lined(
         context: &mut CubeContext,
         size: ExpandElementTyped<u32>,
-        vectorization_factor: u32,
+        line_size: u32,
     ) -> <SharedMemory<Line<T>> as CubeType>::ExpandType {
         let size = size
             .constant()
             .expect("Shared memory need constant initialization value")
             .as_u32();
         let var = context.create_shared(
-            Item::vectorized(T::as_elem(), NonZero::new(vectorization_factor as u8)),
+            Item::lined(T::as_elem(), NonZero::new(line_size as u8)),
             size,
         );
         ExpandElementTyped::new(var)
     }
-    pub fn vectorized<S: Index>(_size: S, _vectorization_factor: u32) -> Self {
+    pub fn line_size<S: Index>(_size: S, _line_size: u32) -> Self {
         SharedMemory { _val: PhantomData }
     }
 
-    pub fn __expand_vectorized(
+    pub fn __expand_line_size(
         context: &mut CubeContext,
         size: ExpandElementTyped<u32>,
-        vectorization_factor: u32,
+        line_size: u32,
     ) -> <Self as CubeType>::ExpandType {
         let size = size
             .constant()
             .expect("Shared memory need constant initialization value")
             .as_u32();
         let var = context.create_shared(
-            Item::vectorized(T::as_elem(), NonZero::new(vectorization_factor as u8)),
+            Item::lined(T::as_elem(), NonZero::new(line_size as u8)),
             size,
         );
         ExpandElementTyped::new(var)

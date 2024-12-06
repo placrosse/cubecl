@@ -10,7 +10,7 @@ use crate::frontend::{
     CubePrimitive, CubeType, ExpandElementBaseInit, ExpandElementTyped, IntoRuntime,
 };
 
-/// A contiguous list of elements that supports auto-vectorized operations.
+/// A contiguous list of elements that supports auto-line_size operations.
 #[derive(Clone, Copy, Eq)]
 pub struct Line<P: CubePrimitive> {
     // Comptime lines only support 1 element.
@@ -78,8 +78,8 @@ mod fill {
             context: &mut CubeContext,
             value: ExpandElementTyped<P>,
         ) -> Self {
-            let length = self.expand.item.vectorization;
-            let output = context.create_local_binding(Item::vectorized(P::as_elem(), length));
+            let length = self.expand.item.line_size;
+            let output = context.create_local_binding(Item::lined(P::as_elem(), length));
 
             cast::expand::<P>(context, value, output.clone().into());
 
@@ -120,7 +120,7 @@ mod empty {
                 None => None,
             };
             context
-                .create_local_variable(Item::vectorized(Self::as_elem(), length))
+                .create_local_variable(Item::lined(Self::as_elem(), length))
                 .into()
         }
     }
@@ -147,7 +147,7 @@ mod size {
 
         /// Expand function of [size](Self::size).
         pub fn __expand_size(context: &mut CubeContext, element: ExpandElementTyped<P>) -> u32 {
-            element.__expand_vectorization_factor_method(context)
+            element.__expand_line_size_method(context)
         }
     }
 
@@ -156,7 +156,7 @@ mod size {
         pub fn size(&self) -> u32 {
             self.expand
                 .item
-                .vectorization
+                .line_size
                 .unwrap_or(NonZero::new(1).unwrap())
                 .get() as u32
         }
@@ -204,11 +204,11 @@ macro_rules! impl_line_comparison {
                         context: &mut CubeContext,
                         rhs: Self,
                     ) -> ExpandElementTyped<Line<bool>> {
-                        let size = self.expand.item.vectorization;
+                        let size = self.expand.item.line_size;
                         let lhs = self.expand.into();
                         let rhs = rhs.expand.into();
 
-                        let output = context.create_local_binding(Item::vectorized(bool::as_elem(), size));
+                        let output = context.create_local_binding(Item::lined(bool::as_elem(), size));
 
                         context.register(Instruction::new(
                             Operator::$operator(BinaryOperator { lhs, rhs }),
@@ -268,7 +268,7 @@ impl<N: Numeric> Dot for Line<N> {
     ) -> ExpandElementTyped<Self> {
         let lhs: ExpandElement = lhs.into();
         let mut item = lhs.item;
-        item.vectorization = None;
+        item.line_size = None;
         binary_expand_fixed_output(context, lhs, rhs.into(), item, Operator::Dot).into()
     }
 }

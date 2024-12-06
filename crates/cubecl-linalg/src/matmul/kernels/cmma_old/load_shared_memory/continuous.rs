@@ -30,7 +30,7 @@ impl<F: Float, FC: Float, I: LoadInfo, T: TilingOrder> SmemLoader<F, FC, I, T>
             MainLoopStrategy::Split(num_load_planes) => num_load_planes,
         };
         let num_smem_elements = I::smem_width(comptime_info) * I::smem_height(comptime_info);
-        let vectorization = vectorization_of(gmem);
+        let vectorization = line_size_of(gmem);
         let jump_length = num_load_planes * vectorization * plane_dim;
         let num_iterations = num_smem_elements / jump_length;
         let unroll = comptime_info.unroll;

@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// Notes:
 ///
-/// [Operator] can be vectorized, but other operations can't.
+/// [Operator] can be line_size, but other operations can't.
 /// Therefore, during tracing, only operators can be registered.
 ///
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

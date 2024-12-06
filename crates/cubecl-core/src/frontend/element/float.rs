@@ -61,22 +61,22 @@ pub trait Float:
     const RADIX: u32;
 
     fn new(val: f32) -> Self;
-    fn vectorized(val: f32, vectorization: u32) -> Self;
-    fn vectorized_empty(vectorization: u32) -> Self;
+    fn lined(val: f32, line_size: u32) -> Self;
+    fn lined_empty(line_size: u32) -> Self;
     fn __expand_new(context: &mut CubeContext, val: f32) -> <Self as CubeType>::ExpandType {
         __expand_new(context, val)
     }
-    fn __expand_vectorized(
+    fn __expand_line_size(
         context: &mut CubeContext,
         val: f32,
-        vectorization: u32,
+        line_size: u32,
     ) -> <Self as CubeType>::ExpandType {
-        __expand_vectorized(context, val, vectorization, Self::as_elem())
+        __expand_lined(context, val, line_size, Self::as_elem())
     }
 
-    fn __expand_vectorized_empty(
+    fn __expand_line_size_empty(
         context: &mut CubeContext,
-        vectorization: u32,
+        line_size: u32,
     ) -> <Self as CubeType>::ExpandType;
 }
 
@@ -114,12 +114,12 @@ macro_rules! impl_float {
             const MIN: Self = $primitive::MIN;
         }
 
-        impl Vectorized for $primitive {
-            fn vectorization_factor(&self) -> u32 {
+        impl Lined for $primitive {
+            fn line_size(&self) -> u32 {
                 1
             }
 
-            fn vectorize(self, _factor: u32) -> Self {
+            fn to_line(self, _line_size: u32) -> Self {
                 unexpanded!()
             }
         }
@@ -148,22 +148,22 @@ macro_rules! impl_float {
                 $new(val)
             }
 
-            fn vectorized(val: f32, _vectorization: u32) -> Self {
+            fn lined(val: f32, _line_size: u32) -> Self {
                 Self::new(val)
             }
 
-            fn vectorized_empty(vectorization: u32) -> Self {
-                Self::vectorized(0., vectorization)
+            fn lined_empty(line_size: u32) -> Self {
+                Self::lined(0., line_size)
             }
 
-            fn __expand_vectorized_empty(
+            fn __expand_line_size_empty(
                 context: &mut CubeContext,
-                vectorization: u32,
+                line_size: u32,
             ) -> <Self as CubeType>::ExpandType {
                 context
-                    .create_local_variable(Item::vectorized(
+                    .create_local_variable(Item::lined(
                         Self::as_elem(),
-                        NonZero::new(vectorization as u8),
+                        NonZero::new(line_size as u8),
                     ))
                     .into()
             }

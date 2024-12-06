@@ -8,8 +8,8 @@ pub mod assert_comptime {
 }
 
 #[cube]
-pub fn vectorization_of_intrinsic<F: Float>(input: F) -> u32 {
-    let vec = vectorization_of(&input);
+pub fn line_size_of_intrinsic<F: Float>(input: F) -> u32 {
+    let vec = line_size_of(&input);
     assert_comptime::<u32>(vec);
     vec
 }
@@ -27,13 +27,13 @@ mod tests {
     type ElemType = f32;
 
     #[test]
-    fn vectorization_of_test() {
+    fn line_size_of_test() {
         let mut context = CubeContext::default();
 
         let input =
-            context.create_local_binding(Item::vectorized(ElemType::as_elem(), NonZero::new(3)));
+            context.create_local_binding(Item::lined(ElemType::as_elem(), NonZero::new(3)));
 
-        vectorization_of_intrinsic::expand::<ElemType>(&mut context, input.into());
+        line_size_of_intrinsic::expand::<ElemType>(&mut context, input.into());
         let scope = context.into_scope();
 
         assert_eq!(format!("{:?}", scope.operations), inline_macro_ref());
