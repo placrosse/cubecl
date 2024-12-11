@@ -433,7 +433,14 @@ impl HipContext {
                 } else {
                     message += "\n No compilation logs found!";
                 }
-                panic!("{message}\n[Source]  \n{}", jitc_kernel.source);
+                let numbered_source: String = jitc_kernel
+                    .source
+                    .lines()
+                    .enumerate()
+                    .map(|(index, line)| format!("{:<4} |   {}", index + 1, line))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                panic!("{message}\n[Source]\n{numbered_source}");
             }
             assert_eq!(
                 status, hiprtcResult_HIPRTC_SUCCESS,
